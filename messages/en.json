@@ -1,0 +1,30 @@
+{
+  "header": {
+    "doctorOffice": "Doctor office",
+    "doctorOfficeDetails": "Practice details",
+    "pharmacy": "Pharmacy",
+    "pharmacyDetails": "Pharmacy details",
+    "noOffice": "No office",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone"
+    }
+  },
+  "userNav": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "myTeam": "My Team",
+    "logout": "Log out"
+  },
+  "nav": {
+    "viewPatients": "View Patients",
+    "addPatient": "Add a new patient",
+    "viewOrders": "View Orders",
+    "addOrder": "Add a new order"
+  },
+  "language": {
+    "label": "Language",
+    "change": "Change language"
+  }
+}

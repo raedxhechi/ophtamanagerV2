@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 // import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { META_THEME_COLORS, siteConfig } from "@/lib/config";
@@ -60,13 +62,14 @@ export const metadata: Metadata = {
   manifest: `${siteConfig.url}/site.webmanifest`,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
-    <html lang="en" suppressHydrationWarning className={cn(fontVariables, "h-full")}>
+    <html lang={locale} suppressHydrationWarning className={cn(fontVariables, "h-full")}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -89,20 +92,22 @@ export default function RootLayout({
           "group/body overflow-hidden h-full antialiased [--footer-height:calc(var(--spacing)*14)] [--header-height:calc(var(--spacing)*14)] xl:[--footer-height:calc(var(--spacing)*24)]"
         )}
       >
-        <ThemeProvider>
-          <LayoutProvider>
-            <ReactQueryProvider>
-            {/* <ActiveThemeProvider > */}
-              {/* <NuqsAdapter> */}
-              {children}
-              <Toaster position="top-center" />
-              {/* </NuqsAdapter> */}
-              <TailwindIndicator />
-              <Analytics />
-            {/* </ActiveThemeProvider> */}
-            </ReactQueryProvider>
-          </LayoutProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider>
+          <ThemeProvider>
+            <LayoutProvider>
+              <ReactQueryProvider>
+              <ActiveThemeProvider >
+                {/* <NuqsAdapter> */}
+                {children}
+                <Toaster position="top-center" />
+                {/* </NuqsAdapter> */}
+                <TailwindIndicator />
+                <Analytics />
+              </ActiveThemeProvider>
+              </ReactQueryProvider>
+            </LayoutProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

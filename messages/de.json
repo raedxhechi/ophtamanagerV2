@@ -1,0 +1,30 @@
+{
+  "header": {
+    "doctorOffice": "Arztpraxis",
+    "doctorOfficeDetails": "Praxisdaten",
+    "pharmacy": "Apotheke",
+    "pharmacyDetails": "Apothekendaten",
+    "noOffice": "Keine Praxis",
+    "fields": {
+      "name": "Name",
+      "email": "E-Mail",
+      "phone": "Telefon"
+    }
+  },
+  "userNav": {
+    "profile": "Profil",
+    "settings": "Einstellungen",
+    "myTeam": "Mein Team",
+    "logout": "Abmelden"
+  },
+  "nav": {
+    "viewPatients": "Patienten anzeigen",
+    "addPatient": "Neuen Patienten hinzufügen",
+    "viewOrders": "Bestellungen anzeigen",
+    "addOrder": "Neue Bestellung hinzufügen"
+  },
+  "language": {
+    "label": "Sprache",
+    "change": "Sprache ändern"
+  }
+}

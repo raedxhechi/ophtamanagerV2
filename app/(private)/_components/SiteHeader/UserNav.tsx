@@ -1,8 +1,13 @@
 "use client";
 
+import type { User } from "@supabase/supabase-js";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+
 import { client } from "@/api/client";
-// import { useUserStore } from "@/zustand/user/user-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { UserRole } from "@/types/user";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,63 +19,91 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
-// import { logout } from "@directus/sdk";
 
-import { useRouter } from "next/navigation";
+interface UserNavProps {
+  user: User;
+  role: UserRole | null;
+}
 
-export function UserNav() {
-  //   const { user } = useUserStore((state) => state);
+/** Best-effort display name from the auth user's metadata, else email local part. */
+function getDisplayName(user: User): string {
+  const meta = user.user_metadata ?? {};
+  const fullName =
+    meta.full_name ||
+    meta.name ||
+    [meta.first_name, meta.last_name].filter(Boolean).join(" ");
+  return fullName || user.email?.split("@")[0] || "User";
+}
+
+function getInitials(name: string, email?: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  if (parts.length === 1 && parts[0]) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (email?.[0] ?? "U").toUpperCase();
+}
+
+export function UserNav({ user, role }: UserNavProps) {
+  const t = useTranslations("userNav");
   const router = useRouter();
-  const user = {
-    firstName: "Raed",
-    lastName: "Hehci",
-    email: "example@gmail.com",
-  };
-  const handleLogout = async () => {
-    await client.auth.signOut()
 
+  const displayName = getDisplayName(user);
+  const initials = getInitials(displayName, user.email);
+
+  const handleLogout = async () => {
+    await client.auth.signOut();
+    router.push("/login");
+    router.refresh();
   };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/15">
+        <Button
+          variant="ghost"
+          className="relative h-10 w-10 rounded-full hover:bg-white/15"
+        >
           <Avatar className="h-9 w-9">
-            {/* <AvatarImage src="/avatars/03.png" alt="@shadcn" /> */}
-            <AvatarFallback className="bg-white/20 text-sm font-medium text-white ring-1 ring-white/30">{`${user?.firstName[0].toUpperCase()}${user?.lastName[0].toUpperCase()}`}</AvatarFallback>
+            <AvatarFallback className="bg-white/20 text-sm font-medium text-white ring-1 ring-white/30">
+              {initials}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{`${user?.firstName} ${user?.lastName}`}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.email}
+              {user.email}
             </p>
+            {role ? (
+              <p className="text-xs capitalize leading-none text-muted-foreground">
+                {role}
+              </p>
+            ) : null}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <Link href={"/profile"}>
             <DropdownMenuItem>
-              Profile
+              {t("profile")}
               <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
             </DropdownMenuItem>
           </Link>
-          {/* <DropdownMenuItem>
-            Billing
-            <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-          </DropdownMenuItem> */}
           <DropdownMenuItem>
-            Settings
+            {t("settings")}
             <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem>My Team</DropdownMenuItem>
+          <DropdownMenuItem>{t("myTeam")}</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
-          Log out
+          {t("logout")}
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>

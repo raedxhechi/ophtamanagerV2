@@ -31,8 +31,23 @@ export async function updateSession(request: NextRequest) {
     // with the Supabase client, your users may be randomly logged out.
     const { data } = await supabase.auth.getClaims()
     const user = data?.claims
-    console.log('user', user)
-   
+
+    // Send unauthenticated users to the login page. Auth-related routes are
+    // allowed through so we don't create a redirect loop.
+    const { pathname } = request.nextUrl
+    const isPublicPath =
+        pathname.startsWith('/login') ||
+        pathname.startsWith('/confirm_email') ||
+        pathname.startsWith('/auth')
+    if (!user && !isPublicPath) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        const redirectResponse = NextResponse.redirect(url)
+        // Preserve any refreshed auth cookies set above.
+        supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
+        return redirectResponse
+    }
+
     //==========================================
 
     // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
