@@ -1,6 +1,6 @@
-import { DataTable } from "@/app/(private)/dashboard/components/data-table";
-import { SectionCards } from "@/app/(private)/dashboard/components/section-cards";
-import data from "@/app/(private)/dashboard/data.json";
+import { DataTable } from "@/app/admin/dashboard/components/data-table";
+import { SectionCards } from "@/app/admin/dashboard/components/section-cards";
+import data from "@/app/admin/dashboard/data.json";
 
 export default function Page() {
   return (
