@@ -41,28 +41,40 @@ export type Database = {
     Tables: {
       doctor_office: {
         Row: {
+          city: string | null
           created_at: string
           email: string | null
+          house_number: string | null
           id: string
           name: string
           phone_number: string | null
+          street: string | null
           updated_at: string
+          zipcode: string | null
         }
         Insert: {
+          city?: string | null
           created_at?: string
           email?: string | null
+          house_number?: string | null
           id?: string
           name: string
           phone_number?: string | null
+          street?: string | null
           updated_at?: string
+          zipcode?: string | null
         }
         Update: {
+          city?: string | null
           created_at?: string
           email?: string | null
+          house_number?: string | null
           id?: string
           name?: string
           phone_number?: string | null
+          street?: string | null
           updated_at?: string
+          zipcode?: string | null
         }
         Relationships: []
       }
@@ -265,6 +277,7 @@ export type Database = {
           city: string | null
           created_at: string
           date_of_birth: string
+          directus_id: number | null
           doctor_office_id: string
           first_name: string
           gender: Database["public"]["Enums"]["gender"] | null
@@ -281,6 +294,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           date_of_birth: string
+          directus_id?: number | null
           doctor_office_id: string
           first_name: string
           gender?: Database["public"]["Enums"]["gender"] | null
@@ -297,6 +311,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           date_of_birth?: string
+          directus_id?: number | null
           doctor_office_id?: string
           first_name?: string
           gender?: Database["public"]["Enums"]["gender"] | null
