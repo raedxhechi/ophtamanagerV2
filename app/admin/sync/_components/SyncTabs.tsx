@@ -9,6 +9,17 @@ const tabs = [
   { href: "/admin/sync", label: "Overview", exact: true },
   { href: "/admin/sync/patients", label: "Patients", exact: false },
   { href: "/admin/sync/doctor-offices", label: "Doctor offices", exact: false },
+  { href: "/admin/sync/medicines", label: "Medicines", exact: false },
+  {
+    href: "/admin/sync/insurance-companies",
+    label: "Insurance companies",
+    exact: false,
+  },
+  {
+    href: "/admin/sync/insurance-policies",
+    label: "Insurance policies",
+    exact: false,
+  },
   { href: "/admin/sync/orders", label: "Orders", exact: false },
 ];
 

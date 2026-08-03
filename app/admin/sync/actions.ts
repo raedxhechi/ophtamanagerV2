@@ -10,6 +10,9 @@ import type { SyncCounts } from "./types";
 export type SyncOverview = {
   patients: SyncCounts;
   doctorOffices: SyncCounts;
+  medicines: SyncCounts;
+  insuranceCompanies: SyncCounts;
+  insurancePolicies: SyncCounts;
   orders: SyncCounts;
 };
 
@@ -26,7 +29,13 @@ export async function getSyncOverview(): Promise<SyncOverview> {
   };
 
   const supabaseCount = async (
-    table: "patients" | "doctor_office" | "orders"
+    table:
+      | "patients"
+      | "doctor_office"
+      | "medicine"
+      | "insurance_companies"
+      | "insurance_policy"
+      | "orders"
   ) => {
     const { count, error } = await supabase
       .from(table)
@@ -38,22 +47,37 @@ export async function getSyncOverview(): Promise<SyncOverview> {
   const [
     patientsD,
     officesD,
+    medicinesD,
+    companiesD,
+    policiesD,
     ordersD,
     patientsS,
     officesS,
+    medicinesS,
+    companiesS,
+    policiesS,
     ordersS,
   ] = await Promise.all([
     directusCount("patients"),
     directusCount("doctorOffice"),
+    directusCount("medicines"),
+    directusCount("insuranceCompanies"),
+    directusCount("insurancePolicies"),
     directusCount("orders"),
     supabaseCount("patients"),
     supabaseCount("doctor_office"),
+    supabaseCount("medicine"),
+    supabaseCount("insurance_companies"),
+    supabaseCount("insurance_policy"),
     supabaseCount("orders"),
   ]);
 
   return {
     patients: { directus: patientsD, supabase: patientsS },
     doctorOffices: { directus: officesD, supabase: officesS },
+    medicines: { directus: medicinesD, supabase: medicinesS },
+    insuranceCompanies: { directus: companiesD, supabase: companiesS },
+    insurancePolicies: { directus: policiesD, supabase: policiesS },
     orders: { directus: ordersD, supabase: ordersS },
   };
 }

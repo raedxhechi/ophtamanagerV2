@@ -68,10 +68,22 @@ export default async function SyncOverviewPage() {
   if (!overview) return null;
 
   return (
+  
+
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <OverviewCard title="Patients" counts={overview.patients} />
       <OverviewCard title="Doctor offices" counts={overview.doctorOffices} />
+      <OverviewCard title="Medicines" counts={overview.medicines} />
+      <OverviewCard
+        title="Insurance companies"
+        counts={overview.insuranceCompanies}
+      />
+      <OverviewCard
+        title="Insurance policies"
+        counts={overview.insurancePolicies}
+      />
       <OverviewCard title="Orders" counts={overview.orders} />
     </div>
+ 
   );
 }

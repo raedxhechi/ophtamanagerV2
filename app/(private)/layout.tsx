@@ -28,7 +28,8 @@ export default async function PrivateLayout({
     .single<UserDataWithOffice>();
 
   return (
-    <div className="flex min-h-svh flex-col">
+    // The root <body> is overflow-hidden, so this section owns its own scroll.
+    <div className="flex h-svh flex-col overflow-y-auto">
       <SiteHeader user={user} userData={userData} />
       <main className="flex-1">{children}</main>
     </div>

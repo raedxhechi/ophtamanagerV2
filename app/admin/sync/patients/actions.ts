@@ -10,6 +10,7 @@ import {
   failResult,
   type ImportError,
   type ImportResult,
+  type ImportWarning,
   type SyncCounts,
 } from "../types";
 
@@ -29,6 +30,7 @@ interface DirectusPatient {
   houseNumber?: string | null;
   zipCode?: string | null;
   doctorOffice?: string | null;
+  insuranceCompany?: number | null;
 }
 
 const DIRECTUS_FIELDS = [
@@ -43,6 +45,7 @@ const DIRECTUS_FIELDS = [
   "houseNumber",
   "zipCode",
   "doctorOffice",
+  "insuranceCompany",
 ];
 
 function mapGender(value: string | null | undefined): Gender | null {
@@ -91,12 +94,26 @@ export async function importPatients(): Promise<ImportResult> {
     return failResult("Only admins can run this import.");
   }
 
+  // Map Directus insurance-company ids -> Supabase uuids (via directus_id) so we
+  // can resolve each patient's insurance_company_id. Requires insurance
+  // companies to have been imported first; unmatched ids are left null.
+  const { data: companies } = await supabase
+    .from("insurance_companies")
+    .select("id, directus_id");
+  const companyUuidByDirectusId = new Map<number, string>();
+  for (const c of companies ?? []) {
+    if (c.directus_id != null) {
+      companyUuidByDirectusId.set(Number(c.directus_id), c.id);
+    }
+  }
+
   const directus = createDirectusServerClient();
   const items = (await directus.request(
     readItems("patients", { limit: -1, fields: DIRECTUS_FIELDS })
   )) as DirectusPatient[];
 
   const errors: ImportError[] = [];
+  const warnings: ImportWarning[] = [];
   let imported = 0;
 
   // Small concurrent batches: fast, but still per-row error isolation.
@@ -116,6 +133,18 @@ export async function importPatients(): Promise<ImportResult> {
           };
         }
 
+        // Resolve the insurance company via its Directus id -> Supabase uuid.
+        const insuranceCompanyId =
+          p.insuranceCompany != null
+            ? (companyUuidByDirectusId.get(Number(p.insuranceCompany)) ?? null)
+            : null;
+
+        // Referenced but not found: keep the patient, but flag the broken link.
+        const warning =
+          p.insuranceCompany != null && insuranceCompanyId === null
+            ? `Insurance company #${p.insuranceCompany} not found in Supabase — link left empty. Import insurance companies first, then re-run.`
+            : undefined;
+
         const row: PatientInsert = {
           directus_id: directusId,
           first_name: p.firstName,
@@ -128,8 +157,7 @@ export async function importPatients(): Promise<ImportResult> {
           house_number: p.houseNumber ?? null,
           zipcode: p.zipCode ?? null,
           doctor_office_id: p.doctorOffice,
-          // Directus insuranceCompany is an integer id; not mapped yet.
-          insurance_company_id: null,
+          insurance_company_id: insuranceCompanyId,
         };
 
         const { error } = await supabase
@@ -138,15 +166,27 @@ export async function importPatients(): Promise<ImportResult> {
         if (error) {
           return { ok: false as const, directusId, message: error.message };
         }
-        return { ok: true as const, directusId };
+        return { ok: true as const, directusId, warning };
       })
     );
 
     for (const r of results) {
-      if (r.ok) imported++;
-      else errors.push({ directusId: r.directusId, message: r.message });
+      if (r.ok) {
+        imported++;
+        if (r.warning) {
+          warnings.push({ directusId: r.directusId, message: r.warning });
+        }
+      } else {
+        errors.push({ directusId: r.directusId, message: r.message });
+      }
     }
   }
 
-  return { total: items.length, imported, failed: errors.length, errors };
+  return {
+    total: items.length,
+    imported,
+    failed: errors.length,
+    errors,
+    warnings,
+  };
 }

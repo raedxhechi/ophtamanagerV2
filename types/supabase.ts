@@ -81,6 +81,7 @@ export type Database = {
       insurance_companies: {
         Row: {
           created_at: string
+          directus_id: number | null
           id: string
           iknumber: string | null
           insurance_type: Database["public"]["Enums"]["insurance_type"]
@@ -89,6 +90,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          directus_id?: number | null
           id?: string
           iknumber?: string | null
           insurance_type: Database["public"]["Enums"]["insurance_type"]
@@ -97,6 +99,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          directus_id?: number | null
           id?: string
           iknumber?: string | null
           insurance_type?: Database["public"]["Enums"]["insurance_type"]
@@ -198,6 +201,7 @@ export type Database = {
         Row: {
           background_color: string | null
           created_at: string
+          directus_id: number | null
           id: string
           medicine_type: Database["public"]["Enums"]["medicine_type"]
           name: string
@@ -207,6 +211,7 @@ export type Database = {
         Insert: {
           background_color?: string | null
           created_at?: string
+          directus_id?: number | null
           id?: string
           medicine_type: Database["public"]["Enums"]["medicine_type"]
           name: string
@@ -216,6 +221,7 @@ export type Database = {
         Update: {
           background_color?: string | null
           created_at?: string
+          directus_id?: number | null
           id?: string
           medicine_type?: Database["public"]["Enums"]["medicine_type"]
           name?: string
@@ -345,6 +351,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          invoice_type: Database["public"]["Enums"]["invoice_types"] | null
           left_eye: boolean
           order_id: string
           patient_id: string
@@ -354,6 +361,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
           left_eye?: boolean
           order_id: string
           patient_id: string
@@ -363,6 +371,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
           left_eye?: boolean
           order_id?: string
           patient_id?: string
@@ -429,6 +438,7 @@ export type Database = {
     Enums: {
       gender: "male" | "female" | "other"
       insurance_type: "Privat" | "Gesetzlich"
+      invoice_types: "Praxis" | "Kasse" | "Patient"
       medicine_type: "Rezeptur" | "Fertigarzneimittel"
       user_role: "admin" | "doctor" | "assistant" | "pharmacist"
     }
@@ -563,6 +573,7 @@ export const Constants = {
     Enums: {
       gender: ["male", "female", "other"],
       insurance_type: ["Privat", "Gesetzlich"],
+      invoice_types: ["Praxis", "Kasse", "Patient"],
       medicine_type: ["Rezeptur", "Fertigarzneimittel"],
       user_role: ["admin", "doctor", "assistant", "pharmacist"],
     },

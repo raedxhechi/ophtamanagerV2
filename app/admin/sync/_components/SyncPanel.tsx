@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   CheckCircle2,
   Database,
@@ -203,32 +204,79 @@ export function SyncPanel({
                 {result.failed} failed
               </span>
             ) : null}
+            {(result.warnings?.length ?? 0) > 0 ? (
+              <span className="flex items-center gap-2 font-medium text-amber-600 dark:text-amber-500">
+                <AlertTriangle className="size-4" />
+                {result.warnings!.length} warnings
+              </span>
+            ) : null}
             <span className="text-muted-foreground">
               {result.total} total in Directus
             </span>
           </div>
 
-          {result.errors.length > 0 ? (
-            <div className="max-h-72 overflow-auto rounded-lg border border-destructive/40">
-              <ul className="divide-y divide-border text-sm">
-                {result.errors.map((err, idx) => (
-                  <li
-                    key={`${err.directusId}-${idx}`}
-                    className="flex gap-3 px-3 py-2"
-                  >
-                    <span className="max-w-[10rem] shrink-0 truncate font-mono text-muted-foreground">
-                      #{err.directusId}
-                    </span>
-                    <span className="text-destructive">{err.message}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No errors — all {entityLabel} imported successfully.
+          {(result.warnings?.length ?? 0) > 0 ? (
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-500">
+              Sync completed, but some connections could not be resolved — the
+              referenced rows aren&apos;t in Supabase yet. Import those first,
+              then re-run this to complete the links.
             </p>
-          )}
+          ) : null}
+
+          {result.errors.length > 0 ? (
+            <div>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Errors
+              </p>
+              <div className="max-h-72 overflow-auto rounded-lg border border-destructive/40">
+                <ul className="divide-y divide-border text-sm">
+                  {result.errors.map((err, idx) => (
+                    <li
+                      key={`${err.directusId}-${idx}`}
+                      className="flex gap-3 px-3 py-2"
+                    >
+                      <span className="max-w-[10rem] shrink-0 truncate font-mono text-muted-foreground">
+                        #{err.directusId}
+                      </span>
+                      <span className="text-destructive">{err.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : null}
+
+          {(result.warnings?.length ?? 0) > 0 ? (
+            <div>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Warnings
+              </p>
+              <div className="max-h-72 overflow-auto rounded-lg border border-amber-500/40">
+                <ul className="divide-y divide-border text-sm">
+                  {result.warnings!.map((warn, idx) => (
+                    <li
+                      key={`${warn.directusId}-${idx}`}
+                      className="flex gap-3 px-3 py-2"
+                    >
+                      <span className="max-w-[10rem] shrink-0 truncate font-mono text-muted-foreground">
+                        #{warn.directusId}
+                      </span>
+                      <span className="text-amber-600 dark:text-amber-500">
+                        {warn.message}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : null}
+
+          {result.errors.length === 0 &&
+          (result.warnings?.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No issues — all {entityLabel} imported and connected successfully.
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>
