@@ -4,7 +4,7 @@ create type public.user_role as enum ('admin', 'doctor', 'assistant', 'pharmacis
 -- Per-user application data, one row per auth user.
 -- The primary key doubles as the foreign key to auth.users so the relationship is 1:1.
 create table public.user_data (
-    id uuid primary key references auth.users (id) on delete cascade,
+    id uuid primary key references auth.users (id) on delete restrict,
     role public.user_role not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
