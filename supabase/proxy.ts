@@ -48,6 +48,15 @@ export async function updateSession(request: NextRequest) {
         return redirectResponse
     }
 
+    // There is no root page — send authenticated users to the patients list.
+    if (pathname === '/') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/patients'
+        const redirectResponse = NextResponse.redirect(url)
+        supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
+        return redirectResponse
+    }
+
     //==========================================
 
     // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
