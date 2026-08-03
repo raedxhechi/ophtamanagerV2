@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { ArrowLeft } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { format } from 'date-fns'
-import { DataTable, useCreateOrderColumns } from '@/components/CreateOrderTable'
+import { DataTable, useCreateOrderColumns } from '../../CreateOrderTable'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '../../ui/button'
-import { Medicine } from '@/lib/types/types'
-import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
+import { Medicine } from '@/types'
+import { useTranslations } from 'next-intl'
 
 export interface ConfirmOrderProps {
   form: any
@@ -19,7 +20,7 @@ export interface ConfirmOrderProps {
 }
 
 export const ConfirmOrder = ({ form, onSubmit, loading, onBack, medicines }: ConfirmOrderProps) => {
-  const { t } = useTranslation()
+  const t = useTranslations()
   const columns = useCreateOrderColumns()
 
   const handleSubmit = (values: any) => {

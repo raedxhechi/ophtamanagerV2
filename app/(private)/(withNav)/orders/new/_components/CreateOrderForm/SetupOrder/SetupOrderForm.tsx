@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import {
@@ -12,13 +13,13 @@ import { SelectInput } from '@/components/ui/selectInput'
 import { formSchema } from '../schema'
 import { DatePicker } from '@/components/ui/datePickerInput'
 import { Separator } from '@/components/ui/separator'
-import { Medicine, MedicineType } from '@/lib/types/types'
-import { CreateOrderTable } from '@/components/CreateOrderTable'
+import { Medicine, MedicineType } from '@/types'
+import { CreateOrderTable } from '../../CreateOrderTable'
 import { Button } from '@/components/ui/button'
-import { useTranslation } from 'react-i18next'
+import { useTranslations } from 'next-intl'
 import { UseFormReturn } from 'react-hook-form'
 import { z } from 'zod'
-import { SubOrderInput } from '@/components/CreateOrderTable/schema'
+import { SubOrderInput } from '../../CreateOrderTable/schema'
 
 export interface SetupOrderProps {
   medicines: Medicine[]
@@ -37,7 +38,7 @@ export const SetupOrder = ({
   onSaveDraft,
   draftLoading,
 }: SetupOrderProps) => {
-  const { t } = useTranslation()
+  const t = useTranslations()
 
   const handleCreateDraft = () => {
     const draftValues = form.getValues()

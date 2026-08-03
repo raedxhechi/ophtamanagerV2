@@ -4,15 +4,15 @@ import { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '@/components/ui/badge'
 
-import { Edit, Eye, Pencil, Plus, Trash } from 'lucide-react'
+import { Eye, Pencil, Trash } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { useTranslation } from 'react-i18next'
+import { useTranslations } from 'next-intl'
 import { SelectInput } from '@/components/ui/selectInput'
 import { AddedSubOrder } from './schema'
 
 export const useAddedSubOrdersColums = () => {
-  const { t } = useTranslation()
+  const t = useTranslations()
 
   const columns: ColumnDef<AddedSubOrder>[] = [
     {
