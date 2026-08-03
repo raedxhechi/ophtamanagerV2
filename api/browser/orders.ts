@@ -2,19 +2,21 @@
 
 import { format } from 'date-fns'
 
-import type { Order } from '@/types'
+import type { OrderWithSubOrders } from '@/types'
 
 import { client } from './client'
 
 // Columns + relations the order views need. Mirrors the old Directus field list:
 // the order, its medicine, and each suborder with its patient (+ that patient's
-// insurance company). Note: Supabase orders have no `user_created` relation.
+// insurance company). The suborder's patient is aliased to the singular `patient`
+// key the OrderWithSubOrders type reads. Note: Supabase orders have no
+// `user_created` relation.
 const ORDER_SELECT = `
   *,
   medicine (*),
   suborders (
     *,
-    patients (
+    patient:patients (
       *,
       insurance_companies (*)
     )
@@ -37,7 +39,7 @@ export const getOrder = async (id: string) => {
     .single()
 
   if (error) throw error
-  return data as unknown as Order
+  return data as unknown as OrderWithSubOrders
 }
 
 export const listOrders = async () => {
@@ -47,7 +49,7 @@ export const listOrders = async () => {
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return (data ?? []) as unknown as Order[]
+  return (data ?? []) as unknown as OrderWithSubOrders[]
 }
 
 export interface OrdersFilters {
@@ -92,7 +94,7 @@ export async function listOrdersPage(
   const { data, error, count } = await query
   if (error) throw error
 
-  return { orders: (data ?? []) as unknown as Order[], total: count ?? 0 }
+  return { orders: (data ?? []) as unknown as OrderWithSubOrders[], total: count ?? 0 }
 }
 
 // Input shape matches the create-order form: a medicine id, application/delivery

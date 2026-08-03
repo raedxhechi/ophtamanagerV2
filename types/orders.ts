@@ -7,6 +7,20 @@ type MedicineRow = Database["public"]["Tables"]["medicine"]["Row"];
 type InsuranceCompanyRow =
   Database["public"]["Tables"]["insurance_companies"]["Row"];
 
+/** A patient with its insurance company, as embedded in order/suborder queries. */
+type PatientWithInsurance = PatientRow & {
+  insurance_companies: InsuranceCompanyRow | null;
+};
+
+/**
+ * A suborder as embedded inside an order: the suborder plus its patient. The
+ * parent order is not repeated here — it's the row this suborder hangs off of.
+ * Matches the embed `suborders(*, patient:patients(*, insurance_companies(*)))`.
+ */
+export type OrderSubOrder = SuborderRow & {
+  patient: PatientWithInsurance;
+};
+
 /**
  * An order with the relations the create/draft form reads: its medicine and
  * each suborder's patient (+ that patient's insurance company). Matches the
@@ -14,9 +28,28 @@ type InsuranceCompanyRow =
  */
 export type DraftOrder = OrderRow & {
   medicine: MedicineRow;
-  subOrders: (SuborderRow & {
-    patient: PatientRow & { insurance_companies: InsuranceCompanyRow | null };
-  })[];
+  subOrders: OrderSubOrder[];
+};
+
+/**
+ * A standalone suborder with the relations the suborder table columns read: its
+ * patient (+ insurance company) and its parent order (+ that order's medicine).
+ * Matches the embed `patient:patients(...)` + `order:orders(*, medicine(*))`.
+ * Extends {@link OrderSubOrder} with the back-reference to the parent order.
+ */
+export type SubOrder = OrderSubOrder & {
+  order: OrderRow & { medicine: MedicineRow | null };
+};
+
+/**
+ * An order together with its suborders — the shape the list/detail views need,
+ * since the bare `orders` Row has no suborders. Mirrors the embed in
+ * `ORDER_SELECT` (api/browser/orders.ts): the order, its medicine, and each
+ * suborder with its patient (+ that patient's insurance company).
+ */
+export type OrderWithSubOrders = OrderRow & {
+  medicine: MedicineRow | null;
+  suborders: OrderSubOrder[];
 };
 
 /**
