@@ -7,10 +7,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { login } from "@/api/auth"
+// import { login } from "@/api/auth"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
+import { login } from "@/api/browser"
 export function LoginForm({
   className,
   ...props

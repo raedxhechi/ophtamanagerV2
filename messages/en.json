@@ -26,5 +26,95 @@
   "language": {
     "label": "Language",
     "change": "Change language"
+  },
+  "component": {
+    "CreateOrderForm": {
+      "toasts": {
+        "success": {
+          "title": "Order created",
+          "description": "The order was created successfully."
+        },
+        "error": {
+          "title": "Something went wrong",
+          "description": "The order could not be created."
+        }
+      }
+    },
+    "SetupOrder": {
+      "title": "Set up order",
+      "form": {
+        "deliveryDate": {
+          "label": "Delivery date",
+          "placeholder": "Select delivery date"
+        },
+        "typeOfMedicine": {
+          "label": "Type of medicine"
+        },
+        "medicine": {
+          "label": "Medicine",
+          "placeholder": "Select medicine"
+        },
+        "applicationDate": {
+          "label": "Application date",
+          "placeholder": "Select application date"
+        },
+        "patients": {
+          "label": "Patients"
+        }
+      },
+      "submitButton": {
+        "text": "Continue"
+      }
+    },
+    "ConfirmOrder": {
+      "backButton": {
+        "text": "Back"
+      },
+      "title": "Confirm order",
+      "sections": {
+        "deliveryDate": {
+          "label": "Delivery date"
+        },
+        "typeOfMedicine": {
+          "label": "Type of medicine"
+        },
+        "medicine": {
+          "label": "Medicine"
+        },
+        "applicationDate": {
+          "label": "Application date"
+        }
+      },
+      "summary": {
+        "totalPatients": "Total patients:",
+        "totalMedicine": "Total medicine:"
+      },
+      "terms": {
+        "label": "I confirm that the order complies with the regulations."
+      },
+      "submitButton": {
+        "text": "Create order"
+      }
+    },
+    "EyeSelector": {
+      "leftEye": "Left eye",
+      "rightEye": "Right eye"
+    },
+    "EditPatientModal": {
+      "title": "Edit patient",
+      "leftEye": "Left eye",
+      "rightEye": "Right eye",
+      "applyChanges": "Apply changes"
+    },
+    "DataTable": {
+      "noResults": "No results."
+    },
+    "PatientTableToolbar": {
+      "searchInput": "Search patients…"
+    },
+    "DataTablePagination1": {
+      "previousPage": "Previous page",
+      "nextPage": "Next page"
+    }
   }
 }

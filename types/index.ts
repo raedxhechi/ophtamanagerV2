@@ -1,6 +1,11 @@
 import type { Database } from "./supabase";
 
 // ---------------------------------------------------------------------------
+// Re-exports
+// ---------------------------------------------------------------------------
+export * from "./orders";
+
+// ---------------------------------------------------------------------------
 // Table row types
 // ---------------------------------------------------------------------------
 export type DoctorOffice = Database["public"]["Tables"]["doctor_office"]["Row"];
@@ -17,6 +22,25 @@ export type InsurancePolicyInsuranceCompany =
 export type Order = Database["public"]["Tables"]["orders"]["Row"];
 export type Suborder = Database["public"]["Tables"]["suborders"]["Row"];
 export type UserData = Database["public"]["Tables"]["user_data"]["Row"];
+
+// ---------------------------------------------------------------------------
+// Relation types (shapes returned by embedded selects in api/browser)
+// ---------------------------------------------------------------------------
+// A policy with its linked medicines and insurance companies nested through the
+// two junction tables — how Supabase returns the `listPolicies` embed. (Replaces
+// the old Directus `insuranceCompanies_id` / `medicines_id` nesting.)
+export type InsurancePolicyWithRelations = InsurancePolicy & {
+  insurance_policy_medicines: { medicine: Medicine }[];
+  insurance_policy_insurance_companies: {
+    insurance_companies: InsuranceCompany;
+  }[];
+};
+
+// A patient with its insurance company joined in (the `insurance_companies (*)`
+// embed used by the patient picker / order form).
+export type PatientWithInsuranceCompany = Patient & {
+  insurance_companies: InsuranceCompany | null;
+};
 
 // ---------------------------------------------------------------------------
 // Enum types

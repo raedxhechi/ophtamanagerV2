@@ -9,11 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { Edit, Eye, Pencil, Plus, Trash } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { useTranslation } from 'react-i18next'
-import { SelectInput } from '../ui/selectInput'
+import { useTranslations } from 'next-intl'
+import { SelectInput } from '@/components/ui/selectInput'
 
 export const useCreateOrderColumns = () => {
-  const { t } = useTranslation()
+  const t = useTranslations()
 
   const columns: ColumnDef<any>[] = [
     {

@@ -12,9 +12,12 @@ const selectInvoiceSchema = z.object({
 })
 
 export const availbleSubOrder = subOrderInpuSchema.extend({
-  toggleEye: z.function().args(eyetoggleschema),
-  selectInvoice: z.function().args(selectInvoiceSchema),
-  selectPatient: z.function().args(z.string()),
+  // Zod v4 dropped the `.args()` builder; model these callbacks with z.custom.
+  toggleEye: z.custom<(value: EyeClickedValue) => void>((val) => typeof val === 'function'),
+  selectInvoice: z.custom<(value: z.infer<typeof selectInvoiceSchema>) => void>(
+    (val) => typeof val === 'function'
+  ),
+  selectPatient: z.custom<(id: string) => void>((val) => typeof val === 'function'),
   disabled: z.boolean().optional(),
 })
 

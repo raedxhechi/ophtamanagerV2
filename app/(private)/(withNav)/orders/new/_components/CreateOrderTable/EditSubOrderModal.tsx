@@ -7,8 +7,8 @@ import { Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
-import { useTranslation } from 'react-i18next'
-import { SelectInput } from '../ui/selectInput'
+import { useTranslations } from 'next-intl'
+import { SelectInput } from '@/components/ui/selectInput'
 import { SubOrderInput } from './schema'
 
 interface EditSubOrderModalProps {
@@ -24,7 +24,7 @@ export const EditSubOrderModal = ({
   patient,
   handleConfirmEdit,
 }: EditSubOrderModalProps) => {
-  const { t } = useTranslation()
+  const t = useTranslations()
 
   const [eyes, setEyes] = useState<
     | {

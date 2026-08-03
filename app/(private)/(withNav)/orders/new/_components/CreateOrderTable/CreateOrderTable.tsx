@@ -1,6 +1,6 @@
 'use client'
 import { SubOrderInput } from './schema'
-import { Medicine, Patient } from '@/lib/types/types'
+import { Medicine, PatientWithInsuranceCompany } from '@/types'
 
 import { AvailableSubOrders } from './AvailableSubOrders/AvailableSubOrders'
 import { AddedSuborders } from './AddedSuborders/AddedSuborder'
@@ -10,20 +10,20 @@ import { useSearchPatientsInfinite } from '@/react-query/patients'
 export interface CreateOrderTableProps {
   addedSubOrders: SubOrderInput[]
   onChange: (value: SubOrderInput[]) => void
-  medicinesByCompany: Record<number, Medicine[]>
-  medicineId: number
+  medicinesByCompany: Record<string, Medicine[]>
+  medicineId: string
 }
 
-const patientToSubOrder = (patient: Patient, index: number) => ({
+const patientToSubOrder = (patient: PatientWithInsuranceCompany, index: number) => ({
   number: index + 1,
   patientId: patient.id,
-  dateOfBirth: patient.dateOfBirth,
-  fullName: `${patient.lastName} ${patient.firstName}`,
-  ikNumber: patient.insuranceCompany.ikNumber,
+  dateOfBirth: patient.date_of_birth,
+  fullName: `${patient.last_name} ${patient.first_name}`,
+  ikNumber: patient.insurance_companies?.iknumber,
   leftEye: false,
   rightEye: false,
   invoice: undefined,
-  insuranceCompany: patient.insuranceCompany,
+  insuranceCompany: patient.insurance_companies,
 })
 
 export const CreateOrderTable = ({

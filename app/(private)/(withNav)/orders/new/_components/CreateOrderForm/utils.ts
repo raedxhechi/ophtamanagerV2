@@ -1,36 +1,34 @@
-import { InsurancePolicy, Medicine } from '@/lib/types/types'
-type MedicineRecord = Record<number, Medicine[]>
+import { InsurancePolicyWithRelations, Medicine } from '@/types'
 
-export function mergeMedicines(insurancePolicies?: InsurancePolicy[]): MedicineRecord {
-  if (!insurancePolicies) {
-    return []
-  }
-  const input: Record<number, Medicine[]>[] = insurancePolicies?.map((policy) => {
-    const companiesIds = policy.insuranceCompanies
-      .map((item) => item.insuranceCompanies_id?.id)
-      .filter((item) => !!item)
-    const medicines = policy.medicines.map((med) => med.medicines_id)
-    const res = companiesIds.reduce<Record<number, Medicine[]>>((acc, num) => {
-      acc[num] = medicines // Assign all medicines to the current number
-      return acc
-    }, {})
-    return res
-  })
+// Insurance company id (uuid) -> the medicines available to that company.
+type MedicineRecord = Record<string, Medicine[]>
+
+export function mergeMedicines(
+  insurancePolicies?: InsurancePolicyWithRelations[]
+): MedicineRecord {
   const result: MedicineRecord = {}
+  if (!insurancePolicies) {
+    return result
+  }
 
-  input.forEach((record) => {
-    Object.entries(record).forEach(([key, medicines]) => {
-      const numKey = Number(key)
+  insurancePolicies.forEach((policy) => {
+    const companyIds = policy.insurance_policy_insurance_companies
+      .map((item) => item.insurance_companies?.id)
+      .filter((id): id is string => !!id)
+    const medicines = policy.insurance_policy_medicines
+      .map((item) => item.medicine)
+      .filter((med): med is Medicine => !!med)
 
-      if (!result[numKey]) {
-        result[numKey] = []
+    companyIds.forEach((companyId) => {
+      if (!result[companyId]) {
+        result[companyId] = []
       }
 
-      const existingIds = new Set(result[numKey].map((med) => med.id))
+      const existingIds = new Set(result[companyId].map((med) => med.id))
 
       medicines.forEach((medicine) => {
         if (!existingIds.has(medicine.id)) {
-          result[numKey].push(medicine)
+          result[companyId].push(medicine)
           existingIds.add(medicine.id)
         }
       })

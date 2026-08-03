@@ -13,17 +13,18 @@ import { SelectInput } from '@/components/ui/selectInput'
 import { formSchema } from '../schema'
 import { DatePicker } from '@/components/ui/datePickerInput'
 import { Separator } from '@/components/ui/separator'
-import { Medicine, MedicineType } from '@/types'
+import { Medicine } from '@/types'
 import { CreateOrderTable } from '../../CreateOrderTable'
 import { Button } from '@/components/ui/button'
 import { useTranslations } from 'next-intl'
 import { UseFormReturn } from 'react-hook-form'
 import { z } from 'zod'
 import { SubOrderInput } from '../../CreateOrderTable/schema'
+import { MedicineType } from '@/types/enums'
 
 export interface SetupOrderProps {
   medicines: Medicine[]
-  medicinesByCompany: Record<number, Medicine[]>
+  medicinesByCompany: Record<string, Medicine[]>
   form: UseFormReturn<z.infer<typeof formSchema>>
   onSubmit: (values?: any) => void
   onSaveDraft: (values?: any) => void
@@ -46,7 +47,7 @@ export const SetupOrder = ({
   }
 
   const handleSubmit = (values?: any) => {
-    const validate = form.trigger()
+    form.trigger()
     onSubmit(values)
   }
 
@@ -182,7 +183,7 @@ export const SetupOrder = ({
                     medicinesByCompany={medicinesByCompany}
                     onChange={(value: SubOrderInput[]) => field.onChange(value)}
                     addedSubOrders={field.value}
-                    medicineId={Number(form.watch('medicine'))}
+                    medicineId={form.watch('medicine')}
                   />
                 </FormControl>
                 <FormMessage />

@@ -19,7 +19,7 @@ import {
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
 import { DataTableToolbar } from './create-order-table-toolbar'
 import { DataTablePagination } from './data-table-pagination'
-import { useTranslation } from 'react-i18next'
+import { useTranslations } from 'next-intl'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -51,7 +51,7 @@ export function DataTable<TData, TValue>({
   hasMore,
   isFetchingMore,
 }: DataTableProps<TData, TValue>) {
-  const { t } = useTranslation()
+  const t = useTranslations()
 
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})

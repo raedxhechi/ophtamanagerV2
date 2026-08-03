@@ -7,12 +7,12 @@ import { Badge } from '@/components/ui/badge'
 import { Eye, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { useTranslation } from 'react-i18next'
+import { useTranslations } from 'next-intl'
 import { SelectInput } from '@/components/ui/selectInput'
 import { AvailableSubOrder } from './schema'
 
 export const useAvailableSubOrdersColumns = () => {
-  const { t } = useTranslation()
+  const t = useTranslations()
 
   const columns: ColumnDef<AvailableSubOrder>[] = [
     {

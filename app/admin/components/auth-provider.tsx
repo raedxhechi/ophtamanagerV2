@@ -1,6 +1,6 @@
 'use client'
 
-import { client } from "@/api/client"
+import { client } from "@/api/browser/client"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 

@@ -10,14 +10,16 @@ import { z } from 'zod'
 import { ConfirmOrder } from './ConfirmOrder/ConfirmOrder'
 import { useCreateOrder } from '@/react-query/orders'
 import { useUserStore } from '@/zustand/user/user-provider'
-import { CreateOrderInput, DraftOrder, Medicine } from '@/lib/types/types'
-import { toast } from '@/hooks/use-toast'
+import { CreateOrderInput, DraftOrder, Medicine } from '@/types'
+
 import { useListPolicies } from '@/react-query/insurancePolicies'
-import { useTranslation } from 'react-i18next'
+import { useTranslations } from 'next-intl'
 import { useListMedicines } from '@/react-query/medicines'
 import { mergeMedicines } from './utils'
 import { useCreateDraftOrder, useDeleteDraftOrder } from '@/react-query/draftOrders'
-import { parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
+import { toast } from 'sonner'
+import { InvoiceType } from '@/types'
 
 export interface CreateOrderFormProps {
   onFinish?: () => void
@@ -25,13 +27,13 @@ export interface CreateOrderFormProps {
   draftOrder?: DraftOrder
 }
 
-export const CreateOrderForm = ({ onFinish, type, draftOrder }: CreateOrderFormProps) => {
-  const { t } = useTranslation()
-  const { data: insurancePolicies, error: policiesError } = useListPolicies()
+export const CreateOrderForm = ({ onFinish, draftOrder }: CreateOrderFormProps) => {
+  const t = useTranslations()
+  const { data: insurancePolicies } = useListPolicies()
   const { data: supportedMedicines } = useListMedicines()
 
   const [view, setView] = useState<'setupOrder' | 'ConfirmOrder'>('setupOrder')
-  const [medicineByCompany, setMedicineByCompany] = useState<Record<number, Medicine[]>>(
+  const [medicineByCompany, setMedicineByCompany] = useState<Record<string, Medicine[]>>(
     mergeMedicines(insurancePolicies)
   )
   useEffect(() => {
@@ -43,69 +45,69 @@ export const CreateOrderForm = ({ onFinish, type, draftOrder }: CreateOrderFormP
   const {
     mutate: createDraft,
     isPending: draftPending,
-    error: draftError,
-    isError: isDraftError,
+    // error: draftError,
+    // isError: isDraftError,
     isSuccess: isDraftSuccess,
   } = useCreateDraftOrder()
 
   const { mutate: deleteDraft } = useDeleteDraftOrder()
 
-  const { user } = useUserStore((state) => state)
+  // const { user } = useUserStore((state) => state)
 
-  useEffect(() => {
-    if (isSuccess) {
-      toast({
-        title: t('component.CreateOrderForm.toasts.success.title'),
-        description: t('component.CreateOrderForm.toasts.success.description'),
-      })
-      onFinish && onFinish()
-      setView('setupOrder')
-      form.reset()
-    }
-  }, [isSuccess])
-
-  useEffect(() => {
-    if (isDraftSuccess) {
-      toast({
-        title: t('component.CreateOrderForm.toasts.success.title'),
-        description: t('component.CreateOrderForm.toasts.success.description'),
-      })
-      onFinish && onFinish()
-      setView('setupOrder')
-      form.reset()
-    }
-  }, [isDraftSuccess])
-
-  useEffect(() => {
-    error &&
-      toast({
-        title: t('component.CreateOrderForm.toasts.error.title'),
-        description: t('component.CreateOrderForm.toasts.error.description'),
-      })
-  }, [isError])
-
-  const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      deliveryDate: draftOrder?.deliveryDate ? parseISO(draftOrder?.deliveryDate) : undefined,
+      deliveryDate: draftOrder?.delivery_date ? parseISO(draftOrder.delivery_date) : undefined,
       typeOfMedicine: draftOrder?.medicine.medicine_type,
-      medicine: draftOrder?.medicine.id.toString(),
-      applicationDate: draftOrder?.applicationDate
-        ? parseISO(draftOrder?.applicationDate)
+      medicine: draftOrder?.medicine.id,
+      applicationDate: draftOrder?.application_date
+        ? parseISO(draftOrder.application_date)
         : undefined,
       subOrders:
         draftOrder?.subOrders?.map((sub) => ({
           patientId: sub.patient.id,
-          fullName: `${sub.patient.lastName} ${sub.patient.firstName}`,
-          dateOfBirth: sub.patient.dateOfBirth,
-          ikNumber: sub.patient.insuranceCompany.ikNumber,
-          leftEye: sub.leftEye,
-          rightEye: sub.rightEye,
-          invoice: sub.invoice || undefined,
+          fullName: `${sub.patient.last_name} ${sub.patient.first_name}`,
+          dateOfBirth: sub.patient.date_of_birth,
+          ikNumber: sub.patient.insurance_companies?.iknumber,
+          leftEye: sub.left_eye,
+          rightEye: sub.right_eye,
+          invoice: sub.invoice_type || undefined,
         })) || [],
       confirmRegulations: false,
     },
   })
+
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(t('component.CreateOrderForm.toasts.success.title'), {
+        description: t('component.CreateOrderForm.toasts.success.description'),
+      })
+      onFinish?.()
+      setView('setupOrder')
+      form.reset()
+    }
+  }, [form, isSuccess, onFinish, t])
+
+  useEffect(() => {
+    if (isDraftSuccess) {
+      toast.success(t('component.CreateOrderForm.toasts.success.title'), {
+        description: t('component.CreateOrderForm.toasts.success.description'),
+      })
+      onFinish?.()
+      setView('setupOrder')
+      form.reset()
+    }
+  }, [form, isDraftSuccess, onFinish, t])
+
+  useEffect(() => {
+    if (error) {
+      toast.error(t('component.CreateOrderForm.toasts.error.title'), {
+        description: t('component.CreateOrderForm.toasts.error.description'),
+      })
+    }
+  }, [error, isError, t])
+
 
   const handleBack = () => {
     setView('setupOrder')
@@ -117,57 +119,51 @@ export const CreateOrderForm = ({ onFinish, type, draftOrder }: CreateOrderFormP
 
   const handleCreateDraft = (data: z.infer<typeof formSchema>) => {
     console.log({ draftData: data })
-    if (user && user.doctorOffice) {
+ 
       const createDraftOrderInput: Partial<CreateOrderInput> = {
-        applicationDate: data.applicationDate,
-        deliveryDate: data.deliveryDate,
-        medicine: Number(data.medicine),
-        doctorOffice: user.doctorOffice.id,
+        application_date: format(data.applicationDate, 'yyyy-MM-dd'),
+        delivery_date: format(data.deliveryDate, 'yyyy-MM-dd'),
+        medicine_id: data.medicine,
         quantity: data.subOrders.reduce((count, patient) => {
           return count + (patient.leftEye ? 1 : 0) + (patient.rightEye ? 1 : 0)
         }, 0),
-        subOrders: {
-          create: data.subOrders.map((subOrder) => ({
-            patient: Number(subOrder.patientId),
-            leftEye: !!subOrder.leftEye,
-            rightEye: !!subOrder.rightEye,
-            invoice: subOrder.invoice,
-          })),
-        },
+        subOrders: data.subOrders.map((subOrder) => ({
+          patient_id: subOrder.patientId,
+          left_eye: !!subOrder.leftEye,
+          right_eye: !!subOrder.rightEye,
+          invoice_type: subOrder.invoice ? (subOrder.invoice as InvoiceType) : null,
+        })),
       }
 
       createDraft(createDraftOrderInput)
       if (draftOrder && draftOrder.id) {
         deleteDraft(draftOrder.id)
       }
-    }
+  
   }
 
   const handleConfirmSubmit = (data: z.infer<typeof formSchema>) => {
     console.log({ data })
-    if (user && user.doctorOffice) {
+  
       const createOrderInput: CreateOrderInput = {
-        applicationDate: data.applicationDate,
-        deliveryDate: data.deliveryDate,
-        medicine: Number(data.medicine),
-        doctorOffice: user.doctorOffice.id,
+        application_date: format(data.applicationDate, 'yyyy-MM-dd'),
+        delivery_date: format(data.deliveryDate, 'yyyy-MM-dd'),
+        medicine_id: data.medicine,
         quantity: data.subOrders.reduce((count, patient) => {
           return count + (patient.leftEye ? 1 : 0) + (patient.rightEye ? 1 : 0)
         }, 0),
-        subOrders: {
-          create: data.subOrders.map((subOrder) => ({
-            patient: Number(subOrder.patientId),
-            leftEye: !!subOrder.leftEye,
-            rightEye: !!subOrder.rightEye,
-            invoice: subOrder.invoice,
-          })),
-        },
+        subOrders: data.subOrders.map((subOrder) => ({
+          patient_id: subOrder.patientId,
+          left_eye: !!subOrder.leftEye,
+          right_eye: !!subOrder.rightEye,
+          invoice_type: subOrder.invoice ? (subOrder.invoice as InvoiceType) : null,
+        })),
       }
       createOrder(createOrderInput)
       if (draftOrder && draftOrder.id) {
         deleteDraft(draftOrder.id)
       }
-    }
+ 
   }
 
   return view === 'setupOrder' ? (

@@ -26,5 +26,95 @@
   "language": {
     "label": "Sprache",
     "change": "Sprache ändern"
+  },
+  "component": {
+    "CreateOrderForm": {
+      "toasts": {
+        "success": {
+          "title": "Bestellung erstellt",
+          "description": "Die Bestellung wurde erfolgreich erstellt."
+        },
+        "error": {
+          "title": "Etwas ist schiefgelaufen",
+          "description": "Die Bestellung konnte nicht erstellt werden."
+        }
+      }
+    },
+    "SetupOrder": {
+      "title": "Bestellung einrichten",
+      "form": {
+        "deliveryDate": {
+          "label": "Lieferdatum",
+          "placeholder": "Lieferdatum auswählen"
+        },
+        "typeOfMedicine": {
+          "label": "Medikamententyp"
+        },
+        "medicine": {
+          "label": "Medikament",
+          "placeholder": "Medikament auswählen"
+        },
+        "applicationDate": {
+          "label": "Anwendungsdatum",
+          "placeholder": "Anwendungsdatum auswählen"
+        },
+        "patients": {
+          "label": "Patienten"
+        }
+      },
+      "submitButton": {
+        "text": "Weiter"
+      }
+    },
+    "ConfirmOrder": {
+      "backButton": {
+        "text": "Zurück"
+      },
+      "title": "Bestellung bestätigen",
+      "sections": {
+        "deliveryDate": {
+          "label": "Lieferdatum"
+        },
+        "typeOfMedicine": {
+          "label": "Medikamententyp"
+        },
+        "medicine": {
+          "label": "Medikament"
+        },
+        "applicationDate": {
+          "label": "Anwendungsdatum"
+        }
+      },
+      "summary": {
+        "totalPatients": "Patienten gesamt:",
+        "totalMedicine": "Medikamente gesamt:"
+      },
+      "terms": {
+        "label": "Ich bestätige, dass die Bestellung den Vorschriften entspricht."
+      },
+      "submitButton": {
+        "text": "Bestellung erstellen"
+      }
+    },
+    "EyeSelector": {
+      "leftEye": "Linkes Auge",
+      "rightEye": "Rechtes Auge"
+    },
+    "EditPatientModal": {
+      "title": "Patient bearbeiten",
+      "leftEye": "Linkes Auge",
+      "rightEye": "Rechtes Auge",
+      "applyChanges": "Änderungen übernehmen"
+    },
+    "DataTable": {
+      "noResults": "Keine Ergebnisse."
+    },
+    "PatientTableToolbar": {
+      "searchInput": "Patienten suchen…"
+    },
+    "DataTablePagination1": {
+      "previousPage": "Vorherige Seite",
+      "nextPage": "Nächste Seite"
+    }
   }
 }

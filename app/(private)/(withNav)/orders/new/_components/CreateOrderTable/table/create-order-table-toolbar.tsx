@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Table } from '@tanstack/react-table'
 import { Input } from '@/components/ui/input'
-import { useTranslation } from 'react-i18next'
+import { useTranslations } from 'next-intl'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
@@ -17,7 +17,7 @@ export function DataTableToolbar<TData>({
   search,
   onSearchChange,
 }: DataTableToolbarProps<TData>) {
-  const { t } = useTranslation()
+  const t = useTranslations()
 
   const serverSearch = onSearchChange !== undefined
 

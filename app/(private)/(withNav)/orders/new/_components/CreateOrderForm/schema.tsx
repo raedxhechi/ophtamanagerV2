@@ -1,4 +1,4 @@
-import { MedicineType } from '@/lib/types/types'
+import { Constants } from '@/types/supabase'
 import { z } from 'zod'
 
 const today = new Date()
@@ -17,7 +17,7 @@ export const formSchema = z.object({
   deliveryDate: z.date().min(today),
   applicationDate: z.date().min(today),
   medicine: z.string(),
-  typeOfMedicine: z.nativeEnum(MedicineType),
+  typeOfMedicine: z.enum(Constants.public.Enums.medicine_type),
   subOrders: z.array(subOrderSchema),
   confirmRegulations: z.boolean(),
 })

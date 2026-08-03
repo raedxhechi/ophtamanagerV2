@@ -1,4 +1,4 @@
-import { InsuranceCompany, Medicine, TYPE_OF_INSURANCE_OPTIONS } from '@/lib/types/types'
+import { Medicine } from '@/types'
 import { AvailableSubOrder, EyeClickedValue } from './schema'
 import { DataTable } from '../table/create-order-table'
 import { useAvailableSubOrdersColumns } from './useColumns'
@@ -8,8 +8,8 @@ export interface PatientListProps {
   subOrders: SubOrderInput[]
   onSubOrderChange: (subOrder: SubOrderInput) => void
   onAddSubOrder: (patientId: string) => void
-  medicinesByCompany: Record<number, Medicine[]>
-  medicineId: number
+  medicinesByCompany: Record<string, Medicine[]>
+  medicineId: string
   // Server-side search term + setter (drives the fetched patient list).
   search?: string
   onSearchChange?: (value: string) => void
@@ -61,7 +61,8 @@ export const AvailableSubOrders = ({
     selectPatient: handleAddSubOrder,
     disabled:
       sub.insuranceCompany && medicineId
-        ? sub.insuranceCompany.type === TYPE_OF_INSURANCE_OPTIONS.PUBLIC &&
+        ? // Public ('Gesetzlich') insurers only allow medicines covered by a policy.
+          sub.insuranceCompany.insurance_type === 'Gesetzlich' &&
           !medicinesByCompany[sub.insuranceCompany.id]?.map((med) => med.id).includes(medicineId)
         : true,
   }))

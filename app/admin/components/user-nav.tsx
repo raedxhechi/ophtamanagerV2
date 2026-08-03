@@ -1,6 +1,6 @@
 "use client";
 
-import { client } from "@/api/client";
+import { client } from "@/api/browser/client";
 // import { useUserStore } from "@/zustand/user/user-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
