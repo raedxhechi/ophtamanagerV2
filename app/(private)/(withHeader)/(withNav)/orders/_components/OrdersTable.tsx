@@ -23,7 +23,6 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 
-import type { Database } from "@/types/supabase";
 import { formatDate } from "@/lib/date";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,12 +48,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SubordersTable } from "./SubOrdersTable.tsx/SubOrdersTable";
 
-type Order = Database["public"]["Tables"]["orders"]["Row"];
+import type { OrderWithSubOrders } from "@/types";
+import { DataTableRowActions } from "./RowActions";
 
-export type OrderRow = Order & {
-  medicine: { name: string } | null;
-};
+// The order rows this table renders: an order with its medicine and its
+// suborders (each carrying its patient). See OrderWithSubOrders in types/orders.
+export type OrderRow = OrderWithSubOrders;
 
 /** "application_date" -> "Application date" for the column-visibility menu. */
 function prettify(id: string): string {
@@ -98,6 +99,10 @@ const columns: ColumnDef<OrderRow>[] = [
     header: "Created",
     cell: ({ row }) => orDash(formatDate(row.original.created_at) || null),
   },
+     {
+      id: 'actions',
+      cell: ({ row }) => <DataTableRowActions row={row} />,
+    },
 ];
 
 export function OrdersTable({ data }: { data: OrderRow[] }) {
@@ -192,6 +197,8 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
+                <React.Fragment key={row.id}>
+
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -199,6 +206,21 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                     </TableCell>
                   ))}
                 </TableRow>
+                   {row.getIsExpanded() && (
+                  <TableRow data-state={row.getIsSelected() && 'selected'}>
+                    <TableCell colSpan={columns.length} className='py-0 pr-0'>
+                      <div className='flex h-full my-[-0.5rem] ml-[60px]'>
+                        <SubordersTable
+                          subOrders={row.original.suborders.map((suborder) => ({
+                            ...suborder,
+                            order: row.original,
+                          }))}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </React.Fragment>
               ))
             ) : (
               <TableRow>

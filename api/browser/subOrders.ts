@@ -1,16 +1,18 @@
 'use client'
 
-import type { Suborder } from '@/types'
+import type { SubOrder } from '@/types'
 
 import { client } from './client'
 
+// Aliased so the embedded relations come back under the singular keys the
+// SubOrder type and the suborder table columns read: `patient` and `order`.
 const SUBORDER_SELECT = `
   *,
-  patients (
+  patient:patients (
     *,
     insurance_companies (*)
   ),
-  orders (
+  order:orders (
     *,
     medicine (*)
   )
@@ -24,5 +26,5 @@ export const getSubOrder = async (id: string) => {
     .single()
 
   if (error) throw error
-  return data as unknown as Suborder
+  return data as unknown as SubOrder
 }

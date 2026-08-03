@@ -115,6 +115,10 @@
     "DataTablePagination1": {
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite"
+    },
+    "OrderDataTableRowActions": {
+      "orderDetails": "Bestellung",
+      "hideDetails": "Ausblenden"
     }
   }
 }
