@@ -4,8 +4,6 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { SiteHeader } from "./components/site-header";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-expect-error
 import "./theme.css";
 
 

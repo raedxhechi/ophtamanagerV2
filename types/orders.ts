@@ -48,7 +48,10 @@ export type DraftOrder = OrderRow & {
  * Extends {@link OrderSubOrder} with the back-reference to the parent order.
  */
 export type SubOrder = OrderSubOrder & {
-  order: OrderRow & { medicine: MedicineRow | null };
+  // `created_by` is omitted so this accepts both the standalone suborder query
+  // (scalar created_by) and a parent order injected in OrdersTable (where
+  // created_by is the embedded user row). The columns only read medicine + dates.
+  order: Omit<OrderRow, "created_by"> & { medicine: MedicineRow | null };
 };
 
 /**
