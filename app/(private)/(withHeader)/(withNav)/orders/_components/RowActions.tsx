@@ -74,15 +74,13 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           )}
         </Button>
       )}
+      <Link href={`/order/${row.original.id}/reciept`} target='_blank' rel='noopener noreferrer'>
       <Button
         variant='default'
-        onClick={() => {
-          console.log({ orderToPdf: order })
-        //   setexportOrderModal({ open: true, order: order })
-        }}
-      >
+        >
         <ArrowUpRightFromSquare />
       </Button>
+        </Link>
       <Link href={`/order/${row.original.id}/print`} target='_blank' rel='noopener noreferrer'>
         <Button variant='default'>
           <Printer />

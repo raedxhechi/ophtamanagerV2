@@ -6,6 +6,16 @@ type PatientRow = Database["public"]["Tables"]["patients"]["Row"];
 type MedicineRow = Database["public"]["Tables"]["medicine"]["Row"];
 type InsuranceCompanyRow =
   Database["public"]["Tables"]["insurance_companies"]["Row"];
+type UserDataRow = Database["public"]["Tables"]["user_data"]["Row"];
+// The email/first_name/last_name columns were added by migration; the generated
+// types/supabase.ts may lag behind until `npm run typegen` is re-run, so they're
+// spelled out here to keep the creator embed typed. The intersection is a no-op
+// once the generated row already includes them.
+type CreatedByUser = UserDataRow & {
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+};
 
 /** A patient with its insurance company, as embedded in order/suborder queries. */
 type PatientWithInsurance = PatientRow & {
@@ -47,8 +57,11 @@ export type SubOrder = OrderSubOrder & {
  * `ORDER_SELECT` (api/browser/orders.ts): the order, its medicine, and each
  * suborder with its patient (+ that patient's insurance company).
  */
-export type OrderWithSubOrders = OrderRow & {
+export type OrderWithSubOrders = Omit<OrderRow, "created_by"> & {
   medicine: MedicineRow | null;
+  // The `created_by` scalar (a user id) is replaced by the embedded creator's
+  // user_data row via `created_by:user_data(*)` in ORDER_SELECT.
+  created_by: CreatedByUser | null;
   suborders: OrderSubOrder[];
 };
 

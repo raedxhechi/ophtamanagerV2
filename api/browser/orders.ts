@@ -14,6 +14,7 @@ import { client } from './client'
 const ORDER_SELECT = `
   *,
   medicine (*),
+  created_by:user_data (*),
   suborders (
     *,
     patient:patients (
@@ -39,6 +40,7 @@ export const getOrder = async (id: string) => {
     .single()
 
   if (error) throw error
+  console.log(data)
   return data as unknown as OrderWithSubOrders
 }
 

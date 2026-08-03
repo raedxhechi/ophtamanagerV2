@@ -234,6 +234,7 @@ export type Database = {
         Row: {
           application_date: string | null
           created_at: string
+          created_by: string | null
           delivery_date: string | null
           doctor_office_id: string
           id: string
@@ -244,6 +245,7 @@ export type Database = {
         Insert: {
           application_date?: string | null
           created_at?: string
+          created_by?: string | null
           delivery_date?: string | null
           doctor_office_id?: string
           id?: string
@@ -254,6 +256,7 @@ export type Database = {
         Update: {
           application_date?: string | null
           created_at?: string
+          created_by?: string | null
           delivery_date?: string | null
           doctor_office_id?: string
           id?: string
@@ -262,6 +265,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_data"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_doctor_office_id_fkey"
             columns: ["doctor_office_id"]
@@ -399,21 +409,30 @@ export type Database = {
         Row: {
           created_at: string
           doctor_office_id: string | null
+          email: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           doctor_office_id?: string | null
+          email?: string | null
+          first_name?: string | null
           id: string
+          last_name?: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           doctor_office_id?: string | null
+          email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
