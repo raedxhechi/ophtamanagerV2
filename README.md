@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OptaManager
+
+Internal management app for an ophthalmology/pharmacy workflow: patients,
+insurance policies, medicines, and orders (with suborders). Built on Next.js 16
+and Supabase, with data being migrated from a legacy Directus backend.
+
+For an overview of the architecture, directory layout, domain model, and
+conventions, see [context.md](./context.md).
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and run the dev server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Environment variables live in `.env.local` (Supabase project id/keys,
+`DIRECTUS_API_URL`, `DIRECTUS_ADMIN_STATIC_TOKEN`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+```bash
+npm run dev       # dev server on :3000
+npm run build     # production build
+npm run start     # serve the production build
+npm run lint      # eslint
+npm run typegen   # regenerate types/supabase.ts from the Supabase project
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Next.js 16** (App Router, React 19)
+- **Supabase** (Postgres + SSR auth) — primary datastore
+- **Directus SDK** — legacy backend, read/migrate-only
+- **TanStack Query** (data) & **TanStack Table** (tables)
+- **Zustand** (client state)
+- **shadcn/ui** + Radix + **Tailwind v4**, **next-themes**
+- **next-intl** i18n (`de` default, `en`)
+- **react-hook-form** + **zod**

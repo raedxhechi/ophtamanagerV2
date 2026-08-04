@@ -1,39 +1,13 @@
 export const siteConfig = {
-  name: "raedxhechi/starter",
+  name: "OptaManager",
   url: "",
   ogImage: "",
   description:
-    "A starter project for Next.js with Supabase and Shadcn UI.",
+    "Management app for an ophthalmology/pharmacy workflow — patients, insurance policies, medicines, and orders.",
   links: {
     twitter: "https://twitter.com/",
     github: "https://github.com/",
   },
-  navItems: [
-    {
-      href: "/docs/installation",
-      label: "Docs",
-    },
-    {
-      href: "/docs/components",
-      label: "Components",
-    },
-    {
-      href: "/blocks",
-      label: "Blocks",
-    },
-    {
-      href: "/charts/area",
-      label: "Charts",
-    },
-    {
-      href: "/docs/directory",
-      label: "Directory",
-    },
-    {
-      href: "/create",
-      label: "Create",
-    },
-  ],
 }
 
 export const META_THEME_COLORS = {
