@@ -51,11 +51,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DataTableRowActions, PatientWithSubOrders } from "./SubOrdersTable/RowActions";
-import { SubordersTable } from "./SubOrdersTable/SubOrdersTable";
 
+type Patient = Database["public"]["Tables"]["patients"]["Row"];
 
-export type PatientRow = PatientWithSubOrders & {
+export type PatientRow = Patient & {
   insurance_company: { name: string } | null;
 };
 
@@ -130,14 +129,10 @@ function getColumns(t: TFn): ColumnDef<PatientRow>[] {
       header: t("headers.zipcode"),
       cell: ({ row }) => orDash(row.original.zipcode),
     },
-       {
-          id: 'actions',
-          cell: ({ row }) => <DataTableRowActions />,
-        },
   ];
 }
 
-export function PatientsTable({ data }: { data: PatientRow[] }) {
+export function SubordersTable({ data }: { data: PatientRow[] }) {
   const t = useTranslations("component.PatientsTable");
   const columns = React.useMemo(() => getColumns(t), [t]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -240,29 +235,13 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                    <React.Fragment key={row.id}>
-                             <TableRow key={row.id}>
-                               {row.getVisibleCells().map((cell) => (
-                                 <TableCell key={cell.id}>
-                                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                 </TableCell>
-                               ))}
-                             </TableRow>
-                                {row.getIsExpanded() && (
-                               <TableRow data-state={row.getIsSelected() && 'selected'}>
-                                 <TableCell colSpan={columns.length} className='py-0 pr-0'>
-                                   <div className='flex h-full my-[-0.5rem] ml-[60px]'>
-                                     <SubordersTable
-                                       subOrders={row.original.suborders.map((suborder) => ({
-                                         ...suborder,
-                                         order: row.original,
-                                       }))}
-                                     />
-                                   </div>
-                                 </TableCell>
-                               </TableRow>
-                             )}
-                             </React.Fragment>
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
               ))
             ) : (
               <TableRow>

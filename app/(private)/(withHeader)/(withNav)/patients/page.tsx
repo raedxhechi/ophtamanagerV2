@@ -17,9 +17,6 @@ export default async function PatientsPage() {
     <div className="mx-auto w-full max-w-[96rem] p-6 lg:p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Patients</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Patients registered in your doctor office.
-        </p>
       </div>
 
       {error ? (

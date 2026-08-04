@@ -166,7 +166,11 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button asChild size="sm">
+          <Button
+            asChild
+            size="sm"
+            className="bg-neutral-900 text-white hover:bg-black"
+          >
             <Link href="/orders/new">
               <Plus />
               <span className="hidden lg:inline">Add order</span>
@@ -178,7 +182,7 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
       {/* Table */}
       <div className="overflow-hidden rounded-lg border">
         <Table>
-          <TableHeader className="bg-muted sticky top-0 z-10">
+          <TableHeader className="bg-neutral-900 sticky top-0 z-10 [&_th]:text-white">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -198,7 +202,6 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <React.Fragment key={row.id}>
-
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

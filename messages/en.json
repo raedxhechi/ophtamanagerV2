@@ -112,6 +112,23 @@
     "PatientTableToolbar": {
       "searchInput": "Search patients…"
     },
+    "PatientsTable": {
+      "search": "Search patients…",
+      "columns": "Columns",
+      "addPatient": "Add patient",
+      "noResults": "No patients found.",
+      "headers": {
+        "name": "Name",
+        "date_of_birth": "Date of birth",
+        "gender": "Gender",
+        "insurance_company": "Insurance company",
+        "insurance_number": "Insurance number",
+        "city": "City",
+        "street": "Street",
+        "house_number": "House number",
+        "zipcode": "Zipcode"
+      }
+    },
     "DataTablePagination1": {
       "previousPage": "Previous page",
       "nextPage": "Next page"

@@ -48,9 +48,21 @@ const DIRECTUS_FIELDS = [
   "insuranceCompany",
 ];
 
+// Directus stores gender as German labels (Männlich / Weiblich / Divers);
+// Supabase uses the English enum (male / female / other). Also accept the
+// English values so re-imports stay idempotent.
+const GENDER_MAP: Record<string, Gender> = {
+  männlich: "male",
+  weiblich: "female",
+  divers: "other",
+  male: "male",
+  female: "female",
+  other: "other",
+};
+
 function mapGender(value: string | null | undefined): Gender | null {
   const v = String(value ?? "").trim().toLowerCase();
-  return v === "male" || v === "female" || v === "other" ? (v as Gender) : null;
+  return GENDER_MAP[v] ?? null;
 }
 
 /** Count of patients in Directus and in Supabase, for the pre-import view. */
