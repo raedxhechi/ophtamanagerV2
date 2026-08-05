@@ -31,6 +31,7 @@ interface DirectusPatient {
   zipCode?: string | null;
   doctorOffice?: string | null;
   insuranceCompany?: number | null;
+  date_created?: string | null;
 }
 
 const DIRECTUS_FIELDS = [
@@ -46,6 +47,7 @@ const DIRECTUS_FIELDS = [
   "zipCode",
   "doctorOffice",
   "insuranceCompany",
+  "date_created",
 ];
 
 // Directus stores gender as German labels (Männlich / Weiblich / Divers);
@@ -170,6 +172,9 @@ export async function importPatients(): Promise<ImportResult> {
           zipcode: p.zipCode ?? null,
           doctor_office_id: p.doctorOffice,
           insurance_company_id: insuranceCompanyId,
+          // Preserve the original Directus creation date; omit (→ default now())
+          // only when Directus has none.
+          ...(p.date_created ? { created_at: p.date_created } : {}),
         };
 
         const { error } = await supabase

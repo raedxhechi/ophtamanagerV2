@@ -18,6 +18,7 @@ import {
 } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
+import { formatDateFromString } from "@/lib/utils";
 
 
 import {
@@ -36,6 +37,7 @@ export interface SubOrderForPatient{
   last_name: string;
   date_of_birth: string | null;
   order: {
+    created_at: string | null;
     application_date: string | null;
     delivery_date: string | null;
     medicine: {
@@ -49,8 +51,38 @@ export interface SubOrderForPatient{
 /** Column headers are keyed by column id under the `headers` message group. */
 type TFn = (key: string) => string;
 
-function getColumns(): ColumnDef<SubOrderForPatient>[] {
+function getColumns(t: TFn): ColumnDef<SubOrderForPatient>[] {
   return [
+    {
+      accessorKey: 'name',
+      cell: ({ row }) => (
+        <div className='font-medium'>
+          {[row.original.last_name, row.original.first_name]
+            .filter(Boolean)
+            .join(', ')}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'medicine',
+      cell: ({ row }) => (
+        <div className='flex space-x-2'>
+          <Badge variant='outline'>{row.original.order.medicine?.name ?? ''}</Badge>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'creation_date',
+      cell: ({ row }) => (
+        <div>{`${t("creationDate")}: ${formatDateFromString(row.original.order.created_at)}`}</div>
+      ),
+    },
+    {
+      accessorKey: 'operation_date',
+      cell: ({ row }) => (
+        <div>{`${t("operationDate")}: ${formatDateFromString(row.original.order.application_date)}`}</div>
+      ),
+    },
     {
       accessorKey: 'eyes',
       cell: ({ row }) => {
@@ -87,7 +119,7 @@ function getColumns(): ColumnDef<SubOrderForPatient>[] {
 
 export function SubordersTable({ suborders }: { suborders: SubOrderForPatient[] }) {
   const t = useTranslations("component.PatientsTable");
-  const columns = React.useMemo(() => getColumns(), []);
+  const columns = React.useMemo(() => getColumns(t), [t]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   // A few less-central columns are hidden by default; toggle them back on

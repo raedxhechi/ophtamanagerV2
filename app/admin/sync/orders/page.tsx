@@ -1,9 +1,25 @@
-export default function SyncOrdersPage() {
+import { SyncPanel } from "../_components/SyncPanel";
+import type { SyncCounts } from "../types";
+import { clearAllOrders, getOrderCounts } from "./actions";
+
+export default async function SyncOrdersPage() {
+  let counts: SyncCounts | null = null;
+  let error: string | null = null;
+
+  try {
+    counts = await getOrderCounts();
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Failed to load counts.";
+  }
+
   return (
-    <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-      Order sync isn&apos;t available yet. Orders reference medicines (not yet
-      imported) and use integer ids, so they need their own mapping — coming
-      next.
-    </div>
+    <SyncPanel
+      entityLabel="orders"
+      initialCounts={counts}
+      initialError={error}
+      getCounts={getOrderCounts}
+      streamPath="/admin/sync/orders/stream"
+      onClearAll={clearAllOrders}
+    />
   );
 }

@@ -126,6 +126,8 @@
       "columns": "Spalten",
       "addPatient": "Patient hinzufügen",
       "noResults": "Keine Patienten gefunden.",
+      "creationDate": "Erstellt",
+      "operationDate": "OP-Datum",
       "headers": {
         "name": "Name",
         "date_of_birth": "Geburtsdatum",

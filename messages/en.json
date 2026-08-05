@@ -126,6 +126,8 @@
       "columns": "Columns",
       "addPatient": "Add patient",
       "noResults": "No patients found.",
+      "creationDate": "Created",
+      "operationDate": "Surgery date",
       "headers": {
         "name": "Name",
         "date_of_birth": "Date of birth",

@@ -342,6 +342,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           delivery_date: string | null
+          directus_id: number | null
           doctor_office_id: string
           id: string
           medicine_id: string
@@ -353,6 +354,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           delivery_date?: string | null
+          directus_id?: number | null
           doctor_office_id?: string
           id?: string
           medicine_id: string
@@ -364,6 +366,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           delivery_date?: string | null
+          directus_id?: number | null
           doctor_office_id?: string
           id?: string
           medicine_id?: string
@@ -408,6 +411,7 @@ export type Database = {
           insurance_company_id: string | null
           insurance_number: string | null
           last_name: string
+          search_text: string | null
           street: string | null
           updated_at: string
           zipcode: string | null
@@ -425,6 +429,7 @@ export type Database = {
           insurance_company_id?: string | null
           insurance_number?: string | null
           last_name: string
+          search_text?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
@@ -442,6 +447,7 @@ export type Database = {
           insurance_company_id?: string | null
           insurance_number?: string | null
           last_name?: string
+          search_text?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
@@ -466,6 +472,7 @@ export type Database = {
       suborders: {
         Row: {
           created_at: string
+          directus_id: number | null
           id: string
           invoice_type: Database["public"]["Enums"]["invoice_types"] | null
           left_eye: boolean
@@ -476,6 +483,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          directus_id?: number | null
           id?: string
           invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
           left_eye?: boolean
@@ -486,6 +494,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          directus_id?: number | null
           id?: string
           invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
           left_eye?: boolean
