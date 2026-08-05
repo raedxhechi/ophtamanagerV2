@@ -4,7 +4,7 @@ import { Row } from '@tanstack/react-table'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { ArrowUpRightFromSquare, ChevronDown, CircleSlash, Printer } from 'lucide-react'
+import { ChevronDown, CircleSlash, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import styles from './wiggle.module.css'
@@ -14,16 +14,20 @@ import { useTranslations } from 'next-intl'
 
 export interface PatientWithSubOrders {
   id: string;
-  name: string;
   suborders: any[];
 }
 
 
-interface DataTableRowActionsProps {
-  row?: Row<PatientWithSubOrders | undefined>
+interface DataTableRowActionsProps<T extends PatientWithSubOrders> {
+  row?: Row<T>
+  /** True while this patient's suborders are still being fetched. */
+  loading?: boolean
 }
 
-export function DataTableRowActions({ row }: DataTableRowActionsProps) {
+export function DataTableRowActions<T extends PatientWithSubOrders>({
+  row,
+  loading,
+}: DataTableRowActionsProps<T>) {
 //   const { setexportOrderModal } = useAppStore((state) => state)
   const patient = row?.original
   const [isWiggling, setIsWiggling] = useState(false)
@@ -44,7 +48,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   }
   return (
   <div className={cn('flex items-center space-x-2 w-[200px]')}>
-      {row?.getIsExpanded() ? (
+      {loading ? (
+        <Button variant='ghost' disabled className='hover:bg-transparent'>
+          <span className='mr-2 text-[#CCCCCC]'>
+            {t('component.OrderDataTableRowActions.orderDetails')}
+          </span>
+          <Loader2 size={22} className='animate-spin text-[#cccccc]' />
+        </Button>
+      ) : row?.getIsExpanded() ? (
         <Button variant='secondary' onClick={handleClick}>
           <>
             <span className='mr-2'>{t('component.OrderDataTableRowActions.hideDetails')}</span>

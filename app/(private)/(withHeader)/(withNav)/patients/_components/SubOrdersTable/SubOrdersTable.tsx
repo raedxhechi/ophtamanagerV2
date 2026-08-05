@@ -1,16 +1,9 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Columns3,
-  Plus,
+  Eye,
 } from "lucide-react";
 import {
   flexRender,
@@ -24,117 +17,77 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 
-import type { Database } from "@/types/supabase";
-import { formatDate } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 
-type Patient = Database["public"]["Tables"]["patients"]["Row"];
 
-export type PatientRow = Patient & {
-  insurance_company: { name: string } | null;
-};
-
-function orDash(value: string | null): React.ReactNode {
-  return value ? value : <span className="text-muted-foreground">—</span>;
+export interface SubOrderForPatient{
+  id: string;
+  left_eye: boolean;
+  right_eye: boolean;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string | null;
+  order: {
+    application_date: string | null;
+    delivery_date: string | null;
+    medicine: {
+      name: string;
+    } | null;
+  };
 }
+
+
 
 /** Column headers are keyed by column id under the `headers` message group. */
 type TFn = (key: string) => string;
 
-function getColumns(t: TFn): ColumnDef<PatientRow>[] {
+function getColumns(): ColumnDef<SubOrderForPatient>[] {
   return [
     {
-      id: "name",
-      accessorFn: (row) =>
-        [row.last_name, row.first_name].filter(Boolean).join(", "),
-      header: t("headers.name"),
-      cell: ({ row }) => (
-        <span className="font-medium">
-          {[row.original.last_name, row.original.first_name]
-            .filter(Boolean)
-            .join(", ")}
-        </span>
-      ),
-      enableHiding: false,
-    },
-    {
-      accessorKey: "date_of_birth",
-      header: t("headers.date_of_birth"),
-      cell: ({ row }) => orDash(formatDate(row.original.date_of_birth) || null),
-    },
-    {
-      accessorKey: "gender",
-      header: t("headers.gender"),
-      cell: ({ row }) =>
-        row.original.gender ? (
-          <Badge variant="outline" className="capitalize">
-            {row.original.gender}
-          </Badge>
-        ) : (
-          orDash(null)
-        ),
-    },
-    {
-      id: "insurance_company",
-      accessorFn: (row) => row.insurance_company?.name ?? "",
-      header: t("headers.insurance_company"),
-      cell: ({ row }) => orDash(row.original.insurance_company?.name ?? null),
-    },
-    {
-      accessorKey: "insurance_number",
-      header: t("headers.insurance_number"),
-      cell: ({ row }) => orDash(row.original.insurance_number),
-    },
-    {
-      accessorKey: "city",
-      header: t("headers.city"),
-      cell: ({ row }) => orDash(row.original.city),
-    },
-    {
-      accessorKey: "street",
-      header: t("headers.street"),
-      cell: ({ row }) => orDash(row.original.street),
-    },
-    {
-      accessorKey: "house_number",
-      header: t("headers.house_number"),
-      cell: ({ row }) => orDash(row.original.house_number),
-    },
-    {
-      accessorKey: "zipcode",
-      header: t("headers.zipcode"),
-      cell: ({ row }) => orDash(row.original.zipcode),
+      accessorKey: 'eyes',
+      cell: ({ row }) => {
+        return (
+          <div className='flex space-x-2'>
+            <div className='flex space-x-2'>
+              <Badge
+                variant={row.original.left_eye ? 'outline' : 'secondary'}
+                className={`${
+                  row.original.left_eye ? 'bg-[#246291] text-white ' : 'text-[#505050]'
+                } h-[30px] pr-4 rounded-xl`}
+              >
+                <Eye className='mr-2' size={18} />
+                {'LINKS'}
+              </Badge>
+            </div>
+            <div className='flex space-x-2'>
+              <Badge
+                variant={row.original.right_eye ? 'outline' : 'secondary'}
+                className={`${
+                  row.original.right_eye ? 'bg-[#E10600] text-white ' : 'text-[#505050]'
+                } h-[30px] pr-4 rounded-xl`}
+              >
+                {'RECHTS'}
+                <Eye className='ml-2' size={18} />
+              </Badge>
+            </div>
+          </div>
+        )
+      },
     },
   ];
 }
 
-export function SubordersTable({ data }: { data: PatientRow[] }) {
+export function SubordersTable({ suborders }: { suborders: SubOrderForPatient[] }) {
   const t = useTranslations("component.PatientsTable");
-  const columns = React.useMemo(() => getColumns(t), [t]);
+  const columns = React.useMemo(() => getColumns(), []);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   // A few less-central columns are hidden by default; toggle them back on
@@ -147,7 +100,7 @@ export function SubordersTable({ data }: { data: PatientRow[] }) {
     });
 
   const table = useReactTable({
-    data,
+    data: suborders,
     columns,
     state: { sorting, globalFilter, columnVisibility },
     getRowId: (row) => row.id,
@@ -163,75 +116,10 @@ export function SubordersTable({ data }: { data: PatientRow[] }) {
   });
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Input
-          placeholder={t("search")}
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="h-9 w-full max-w-xs"
-        />
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Columns3 />
-                <span className="hidden lg:inline">{t("columns")}</span>
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {t(`headers.${column.id}`)}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            asChild
-            size="sm"
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <Link href="/patients/new">
-              <Plus />
-              <span className="hidden lg:inline">{t("addPatient")}</span>
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Table */}
+    <div className="flex w-full flex-col gap-4 mb-4 mt-4">
       <div className="overflow-hidden rounded-lg border">
         <Table>
-          <TableHeader className="bg-blue-600 sticky top-0 z-10 [&_th]:text-white">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
+    
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
@@ -255,83 +143,6 @@ export function SubordersTable({ data }: { data: PatientRow[] }) {
             )}
           </TableBody>
         </Table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-muted-foreground hidden text-sm lg:block">
-          {table.getFilteredRowModel().rows.length} patient(s)
-        </div>
-        <div className="flex w-full items-center gap-8 lg:w-fit">
-          <div className="hidden items-center gap-2 lg:flex">
-            <Label htmlFor="rows-per-page" className="text-sm font-medium">
-              Rows per page
-            </Label>
-            <Select
-              value={`${table.getState().pagination.pageSize}`}
-              onValueChange={(value) => table.setPageSize(Number(value))}
-            >
-              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                <SelectValue
-                  placeholder={table.getState().pagination.pageSize}
-                />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex w-fit items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount() || 1}
-          </div>
-          <div className="ml-auto flex items-center gap-2 lg:ml-0">
-            <Button
-              variant="outline"
-              className="hidden size-8 lg:flex"
-              size="icon"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to first page</span>
-              <ChevronsLeft />
-            </Button>
-            <Button
-              variant="outline"
-              className="size-8"
-              size="icon"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to previous page</span>
-              <ChevronLeft />
-            </Button>
-            <Button
-              variant="outline"
-              className="size-8"
-              size="icon"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to next page</span>
-              <ChevronRight />
-            </Button>
-            <Button
-              variant="outline"
-              className="hidden size-8 lg:flex"
-              size="icon"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to last page</span>
-              <ChevronsRight />
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );

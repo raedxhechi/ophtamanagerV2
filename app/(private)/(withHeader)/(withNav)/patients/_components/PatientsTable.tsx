@@ -24,7 +24,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 
-import type { Database } from "@/types/supabase";
+
 import { formatDate } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,12 +51,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DataTableRowActions, PatientWithSubOrders } from "./SubOrdersTable/RowActions";
-import { SubordersTable } from "./SubOrdersTable/SubOrdersTable";
+import { useSubOrdersByPatients } from "@/react-query/subOrders";
+import { DataTableRowActions } from "./SubOrdersTable/RowActions";
+import {
+  SubordersTable,
+  type SubOrderForPatient,
+} from "./SubOrdersTable/SubOrdersTable";
+import { Patient } from "@/types";
 
 
-export type PatientRow = PatientWithSubOrders & {
+export type PatientRow = Patient & {
   insurance_company: { name: string } | null;
+  suborders: SubOrderForPatient[];
 };
 
 function orDash(value: string | null): React.ReactNode {
@@ -130,16 +136,40 @@ function getColumns(t: TFn): ColumnDef<PatientRow>[] {
       header: t("headers.zipcode"),
       cell: ({ row }) => orDash(row.original.zipcode),
     },
-       {
-          id: 'actions',
-          cell: ({ row }) => <DataTableRowActions />,
-        },
+    {
+      id: "actions",
+      cell: ({ row, table }) => (
+        <DataTableRowActions
+          row={row}
+          loading={
+            (table.options.meta as { subOrdersLoading?: boolean } | undefined)
+              ?.subOrdersLoading
+          }
+        />
+      ),
+    },
   ];
 }
 
 export function PatientsTable({ data }: { data: PatientRow[] }) {
   const t = useTranslations("component.PatientsTable");
   const columns = React.useMemo(() => getColumns(t), [t]);
+
+  // Suborders are fetched on the client after this page has rendered (see the
+  // hook) so they don't add to the server render's load time. Until they arrive
+  // each patient just has an empty suborders list.
+  const patientIds = React.useMemo(() => data.map((p) => p.id), [data]);
+  const { data: subOrdersByPatient, isLoading: subOrdersLoading } =
+    useSubOrdersByPatients(patientIds);
+  const rows = React.useMemo<PatientRow[]>(
+    () =>
+      data.map((patient) => ({
+        ...patient,
+        suborders: subOrdersByPatient?.[patient.id] ?? [],
+      })),
+    [data, subOrdersByPatient]
+  );
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   // A few less-central columns are hidden by default; toggle them back on
@@ -152,10 +182,11 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
     });
 
   const table = useReactTable({
-    data,
+    data: rows,
     columns,
     state: { sorting, globalFilter, columnVisibility },
     getRowId: (row) => row.id,
+    meta: { subOrdersLoading },
     globalFilterFn: "includesString",
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -252,12 +283,7 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
                                <TableRow data-state={row.getIsSelected() && 'selected'}>
                                  <TableCell colSpan={columns.length} className='py-0 pr-0'>
                                    <div className='flex h-full my-[-0.5rem] ml-[60px]'>
-                                     <SubordersTable
-                                       subOrders={row.original.suborders.map((suborder) => ({
-                                         ...suborder,
-                                         order: row.original,
-                                       }))}
-                                     />
+                                     <SubordersTable suborders={row.original.suborders} />
                                    </div>
                                  </TableCell>
                                </TableRow>
