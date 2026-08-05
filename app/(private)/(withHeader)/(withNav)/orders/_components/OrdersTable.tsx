@@ -3,12 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Columns3,
   Plus,
 } from "lucide-react";
 import {
@@ -20,17 +18,13 @@ import {
   useReactTable,
   type ColumnDef,
   type SortingState,
-  type VisibilityState,
 } from "@tanstack/react-table";
 
 import { formatDate } from "@/lib/date";
+import { useTableSettings } from "@/hooks/use-table-settings";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ColumnSelector } from "@/components/table/ColumnSelector";
+import { TableSkeleton } from "@/components/table/TableSkeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -105,28 +99,57 @@ const columns: ColumnDef<OrderRow>[] = [
     },
 ];
 
+// What a user with no saved settings gets. Both are module constants because
+// useTableSettings keys its derived state off their identity.
+const columnIds = columns.map(
+  (column) => column.id ?? (column as { accessorKey: string }).accessorKey
+);
+// "Created" starts hidden; toggle it back on via "Columns".
+const defaultVisibility = { created_at: false };
+
 export function OrdersTable({ data }: { data: OrderRow[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
-  // "Created" starts hidden; toggle it back on via "Columns".
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({ created_at: false });
+  // Which columns are shown and in what order: seeded from the user's saved
+  // settings and written back whenever they change it.
+  const {
+    state: columnSettings,
+    isReady,
+    onColumnOrderChange,
+    onColumnVisibilityChange,
+  } = useTableSettings({
+    settingsKey: "orders_table_settings",
+    columnIds,
+    defaultVisibility,
+  });
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter, columnVisibility },
+    state: { sorting, globalFilter, ...columnSettings },
     getRowId: (row) => row.id,
     globalFilterFn: "includesString",
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
+    onColumnOrderChange,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageSize: 10 } },
   });
+
+  // Hold the table back until the saved column settings have settled, so it
+  // isn't drawn in its default shape and then rearranged.
+  if (!isReady) {
+    return (
+      <TableSkeleton
+        columnCount={table.getVisibleLeafColumns().length}
+        headerClassName="bg-neutral-900"
+      />
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -139,33 +162,11 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
           className="h-9 w-full max-w-xs"
         />
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Columns3 />
-                <span className="hidden lg:inline">Columns</span>
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {prettify(column.id)}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ColumnSelector
+            table={table}
+            label={prettify}
+            triggerLabel="Columns"
+          />
           <Button
             asChild
             size="sm"

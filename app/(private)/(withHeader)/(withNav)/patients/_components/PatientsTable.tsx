@@ -4,12 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Columns3,
   Plus,
 } from "lucide-react";
 import {
@@ -22,19 +20,15 @@ import {
   type ColumnDef,
   type FilterFn,
   type SortingState,
-  type VisibilityState,
 } from "@tanstack/react-table";
 
 
 import { formatDate } from "@/lib/date";
+import { useTableSettings } from "@/hooks/use-table-settings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ColumnSelector } from "@/components/table/ColumnSelector";
+import { TableSkeleton } from "@/components/table/TableSkeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -64,6 +58,15 @@ import { Patient } from "@/types";
 export type PatientRow = Patient & {
   insurance_company: { name: string } | null;
   suborders: SubOrderForPatient[];
+};
+
+// A few less-central columns are hidden for a user with no saved settings.
+// A module constant because useTableSettings keys its derived state off its
+// identity.
+const defaultVisibility = {
+  street: false,
+  house_number: false,
+  zipcode: false,
 };
 
 function orDash(value: string | null): React.ReactNode {
@@ -186,31 +189,56 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
-  // A few less-central columns are hidden by default; toggle them back on
-  // via "Columns".
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({
-      street: false,
-      house_number: false,
-      zipcode: false,
-    });
+
+  // The column order a user with no saved settings gets.
+  const columnIds = React.useMemo(
+    () =>
+      columns.map(
+        (column) => column.id ?? (column as { accessorKey: string }).accessorKey
+      ),
+    [columns]
+  );
+  // Which columns are shown and in what order: seeded from the user's saved
+  // settings and written back whenever they change it.
+  const {
+    state: columnSettings,
+    isReady,
+    onColumnOrderChange,
+    onColumnVisibilityChange,
+  } = useTableSettings({
+    settingsKey: "patient_table_settings",
+    columnIds,
+    defaultVisibility,
+  });
 
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting, globalFilter, columnVisibility },
+    state: { sorting, globalFilter, ...columnSettings },
     getRowId: (row) => row.id,
     meta: { subOrdersLoading },
     globalFilterFn,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
+    onColumnOrderChange,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageSize: 10 } },
   });
+
+  // Hold the table back until the saved column settings have settled, so it
+  // isn't drawn in its default shape and then rearranged.
+  if (!isReady) {
+    return (
+      <TableSkeleton
+        columnCount={table.getVisibleLeafColumns().length}
+        headerClassName="bg-blue-600"
+      />
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -223,33 +251,11 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
           className="h-9 w-full max-w-xs"
         />
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Columns3 />
-                <span className="hidden lg:inline">{t("columns")}</span>
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {t(`headers.${column.id}`)}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ColumnSelector
+            table={table}
+            label={(columnId) => t(`headers.${columnId}`)}
+            triggerLabel={t("columns")}
+          />
           <Button
             asChild
             size="sm"
