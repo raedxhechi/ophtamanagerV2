@@ -25,13 +25,15 @@ export default function NewOrderPage() {
   }
 
   return (
-    <Card className='mx-auto flex w-full max-w-[1100px] flex-col bg-[#FAF9F6] p-6'>
-      <CreateOrderForm
-        onFinish={() => router.push('/orders')}
-        onDraftFinish={() => router.push('/draft-orders')}
-        type={draftId ? 'draft' : 'new'}
-        draftOrder={draftOrder}
-      />
-    </Card>
+    <div className='px-4 py-6'>
+      <Card className='mx-auto flex w-full max-w-[1100px] flex-col bg-[oklch(1_0_0)] p-6'>
+        <CreateOrderForm
+          onFinish={() => router.push('/orders')}
+          onDraftFinish={() => router.push('/draft-orders')}
+          type={draftId ? 'draft' : 'new'}
+          draftOrder={draftOrder}
+        />
+      </Card>
+    </div>
   )
 }

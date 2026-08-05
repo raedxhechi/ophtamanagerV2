@@ -138,6 +138,18 @@
         "street": "Street",
         "house_number": "House number",
         "zipcode": "Zipcode"
+      },
+      "details": {
+        "title": "Edit patient",
+        "subtitle": "Patient details",
+        "first_name": "First name",
+        "last_name": "Last name",
+        "uuid": "UUID",
+        "directus_id": "Directus ID",
+        "created_at": "Created at",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "cancel": "Cancel"
       }
     },
     "DataTablePagination1": {

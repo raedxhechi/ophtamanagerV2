@@ -33,13 +33,13 @@ const leftItems: NavItem[] = [
 ];
 
 const rightItems: NavItem[] = [
-  { labelKey: "viewOrders", href: "/orders", icon: ClipboardList, color: "black" },
   {
     labelKey: "viewDraftOrders",
     href: "/draft-orders",
     icon: FileClock,
     color: "black",
   },
+  { labelKey: "viewOrders", href: "/orders", icon: ClipboardList, color: "black" },
   { labelKey: "addOrder", href: "/orders/new", icon: PackagePlus, color: "black" },
 ];
 
@@ -57,9 +57,9 @@ function NavButton({
   return (
     <Button
       asChild
-      size="lg"
+      size="sm"
       className={cn(
-        "h-11 gap-2 px-5 text-base font-medium text-white shadow-sm",
+        "h-9 gap-2 px-3.5 text-sm font-medium text-white shadow-sm",
         isBlue
           ? "bg-blue-600 hover:bg-blue-700"
           : "bg-neutral-900 hover:bg-black",
@@ -71,7 +71,7 @@ function NavButton({
       )}
     >
       <Link href={item.href}>
-        <Icon className="size-5" />
+        <Icon className="size-4" />
         {label}
       </Link>
     </Button>
@@ -86,7 +86,7 @@ export function PageNav() {
     <nav className="sticky top-20 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex w-full max-w-[96rem] items-center gap-4 px-6 py-5 lg:px-10">
         {/* Left section — buttons aligned left */}
-        <div className="flex flex-1 items-center justify-start gap-1">
+        <div className="flex flex-1 items-center justify-start gap-3">
           {leftItems.map((item) => (
             <NavButton
               key={item.href}
@@ -98,7 +98,7 @@ export function PageNav() {
         </div>
 
         {/* Right section — buttons aligned right */}
-        <div className="flex flex-1 items-center justify-end gap-1">
+        <div className="flex flex-1 items-center justify-end gap-3">
           {rightItems.map((item) => (
             <NavButton
               key={item.href}

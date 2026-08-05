@@ -18,11 +18,11 @@
     "logout": "Abmelden"
   },
   "nav": {
-    "viewPatients": "Patienten anzeigen",
-    "addPatient": "Neuen Patienten hinzufügen",
-    "viewOrders": "Bestellungen anzeigen",
-    "addOrder": "Neue Bestellung hinzufügen",
-    "viewDraftOrders": "Geparkte Bestellungen"
+    "viewPatients": "Patientenübersicht",
+    "addPatient": "Patienten hinzufügen",
+    "viewOrders": "Bestellungen",
+    "addOrder": "Neue Bestellung",
+    "viewDraftOrders": "Vorbereitung"
   },
   "language": {
     "label": "Sprache",
@@ -64,7 +64,7 @@
           "placeholder": "Medikament auswählen"
         },
         "applicationDate": {
-          "label": "Anwendungsdatum",
+          "label": "OP-Datum",
           "placeholder": "Anwendungsdatum auswählen"
         },
         "patients": {
@@ -129,8 +129,8 @@
       "creationDate": "Erstellt",
       "operationDate": "OP-Datum",
       "headers": {
-        "name": "Name",
-        "date_of_birth": "Geburtsdatum",
+        "name": "Nachname, Vorname",
+        "date_of_birth": "Geburtstag",
         "gender": "Geschlecht",
         "insurance_company": "Krankenkasse",
         "insurance_number": "Versichertennummer",
@@ -138,6 +138,18 @@
         "street": "Straße",
         "house_number": "Hausnummer",
         "zipcode": "PLZ"
+      },
+      "details": {
+        "title": "Patient bearbeiten",
+        "subtitle": "Patientendetails",
+        "first_name": "Vorname",
+        "last_name": "Nachname",
+        "uuid": "UUID",
+        "directus_id": "Directus-ID",
+        "created_at": "Erstellt am",
+        "save": "Änderungen speichern",
+        "saving": "Speichern…",
+        "cancel": "Abbrechen"
       }
     },
     "DataTablePagination1": {

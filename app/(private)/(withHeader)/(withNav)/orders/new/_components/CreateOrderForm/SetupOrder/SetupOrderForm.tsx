@@ -54,8 +54,8 @@ export const SetupOrder = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className='flex-1 flex flex-col gap-4'>
-        <div className='flex justify-center items-center mb-8'>
-          <h2 className='text-xl font-semibold'>{t('component.SetupOrder.title')}</h2>
+        <div className='flex justify-center items-center mb-0'>
+          <h2 className='text-base font-semibold'>{t('component.SetupOrder.title')}</h2>
         </div>
         <div className='flex gap-4'>
           <div className='min-w-[200px]'>
@@ -152,7 +152,6 @@ export const SetupOrder = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('component.SetupOrder.form.applicationDate.label')}</FormLabel>
-                  <br />
                   <FormControl>
                     <DatePicker
                       date={field.value}

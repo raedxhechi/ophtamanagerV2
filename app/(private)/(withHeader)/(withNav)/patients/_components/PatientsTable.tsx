@@ -41,6 +41,7 @@ import {
   SubordersTable,
   type SubOrderForPatient,
 } from "./SubOrdersTable/SubOrdersTable";
+import { PatientDetailsDrawer } from "./PatientDetailsDrawer";
 import { Patient } from "@/types";
 
 
@@ -200,6 +201,11 @@ export function PatientsTable({
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
+  // Clicking a row (outside the actions cell) opens a drawer with the full
+  // patient record, including the fields not shown as columns.
+  const [selectedPatient, setSelectedPatient] =
+    React.useState<PatientRow | null>(null);
+
   // The column order a user with no saved settings gets.
   const columnIds = React.useMemo(
     () =>
@@ -252,13 +258,14 @@ export function PatientsTable({
           placeholder={t("search")}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="h-9 w-full max-w-xs"
+          className="h-9 w-full max-w-xs bg-white"
         />
         <div className="flex items-center gap-2">
           <ColumnSelector
             table={table}
             label={(columnId) => t(`headers.${columnId}`)}
             triggerLabel={t("columns")}
+            triggerClassName="bg-white"
           />
           <Button
             asChild
@@ -296,16 +303,30 @@ export function PatientsTable({
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                     <React.Fragment key={row.id}>
-                             <TableRow key={row.id}>
+                             <TableRow
+                               key={row.id}
+                               className="cursor-pointer"
+                               onClick={() => setSelectedPatient(row.original)}
+                             >
                                {row.getVisibleCells().map((cell) => (
-                                 <TableCell key={cell.id}>
+                                 <TableCell
+                                   key={cell.id}
+                                   onClick={
+                                     cell.column.id === "actions"
+                                       ? (e) => e.stopPropagation()
+                                       : undefined
+                                   }
+                                 >
                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                  </TableCell>
                                ))}
                              </TableRow>
                                 {row.getIsExpanded() && (
-                               <TableRow data-state={row.getIsSelected() && 'selected'}>
-                                 <TableCell colSpan={columns.length} className='py-0 pr-0'>
+                               <TableRow
+                                 data-state={row.getIsSelected() && 'selected'}
+                                 className='bg-background hover:bg-background'
+                               >
+                                 <TableCell colSpan={columns.length} className='py-0 pr-0 bg-background'>
                                    <div className='flex h-full my-[-0.5rem] ml-[60px]'>
                                      <SubordersTable suborders={row.original.suborders} />
                                    </div>
@@ -384,6 +405,14 @@ export function PatientsTable({
           </div>
         </div>
       </div>
+
+      <PatientDetailsDrawer
+        patient={selectedPatient}
+        open={selectedPatient !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPatient(null);
+        }}
+      />
     </div>
   );
 }

@@ -149,7 +149,7 @@ export function SubordersTable({ suborders }: { suborders: SubOrderForPatient[] 
 
   return (
     <div className="flex w-full flex-col gap-4 mb-4 mt-4">
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-lg border bg-background">
         <Table>
     
           <TableBody>

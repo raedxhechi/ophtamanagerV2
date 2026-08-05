@@ -1,7 +1,6 @@
 
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ModeToggle } from "./mode-toggle";
 
 import { UserNav } from "./user-nav";
 
@@ -16,9 +15,6 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">Documents</h1>
         <div className="ml-auto flex items-center gap-2">
-        
-          {/* <ThemeSelector /> */}
-          <ModeToggle />
           <UserNav />
         </div>
       </div>

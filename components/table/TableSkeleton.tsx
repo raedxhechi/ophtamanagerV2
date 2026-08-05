@@ -40,7 +40,7 @@ export function TableSkeleton({
         {Array.from({ length: rowCount }, (_, row) => (
           <div
             key={row}
-            className="flex items-center gap-4 border-t px-4 py-3.5"
+            className="flex items-center gap-4 border-t bg-white px-4 py-3.5"
           >
             {Array.from({ length: columnCount }, (_, column) => (
               <Skeleton key={column} className="h-4 flex-1" />

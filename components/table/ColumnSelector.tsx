@@ -37,6 +37,8 @@ type ColumnSelectorProps<TData> = {
   label: (columnId: string) => string;
   /** Text on the trigger button, e.g. "Columns". */
   triggerLabel: string;
+  /** Extra classes for the trigger button. */
+  triggerClassName?: string;
 };
 
 /**
@@ -52,6 +54,7 @@ export function ColumnSelector<TData>({
   table,
   label,
   triggerLabel,
+  triggerClassName,
 }: ColumnSelectorProps<TData>) {
   const sensors = useSensors(
     // A few pixels of travel before a drag starts, so clicking a handle without
@@ -90,7 +93,7 @@ export function ColumnSelector<TData>({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className={triggerClassName}>
           <Columns3 />
           <span className="hidden lg:inline">{triggerLabel}</span>
           <ChevronDown />

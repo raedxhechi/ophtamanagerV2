@@ -155,12 +155,12 @@ export function DraftOrdersTable({ data }: { data: DraftOrderRow[] }) {
           placeholder="Search draft orders…"
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="h-9 w-full max-w-xs"
+          className="h-9 w-full max-w-xs bg-white"
         />
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="bg-white">
                 <Columns3 />
                 <span className="hidden lg:inline">Columns</span>
                 <ChevronDown />
