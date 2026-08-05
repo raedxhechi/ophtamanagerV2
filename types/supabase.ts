@@ -347,6 +347,7 @@ export type Database = {
           id: string
           medicine_id: string
           quantity: number
+          search_text: string | null
           updated_at: string
         }
         Insert: {
@@ -359,6 +360,7 @@ export type Database = {
           id?: string
           medicine_id: string
           quantity: number
+          search_text?: string | null
           updated_at?: string
         }
         Update: {
@@ -371,6 +373,7 @@ export type Database = {
           id?: string
           medicine_id?: string
           quantity?: number
+          search_text?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -479,6 +482,7 @@ export type Database = {
           order_id: string
           patient_id: string
           right_eye: boolean
+          search_text: string | null
           updated_at: string
         }
         Insert: {
@@ -490,6 +494,7 @@ export type Database = {
           order_id: string
           patient_id: string
           right_eye?: boolean
+          search_text?: string | null
           updated_at?: string
         }
         Update: {
@@ -501,6 +506,7 @@ export type Database = {
           order_id?: string
           patient_id?: string
           right_eye?: boolean
+          search_text?: string | null
           updated_at?: string
         }
         Relationships: [
