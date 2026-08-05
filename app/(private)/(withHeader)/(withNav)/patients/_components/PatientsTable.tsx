@@ -22,6 +22,7 @@ import {
 
 
 import { formatDate } from "@/lib/date";
+import { cn } from "@/lib/utils";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,15 +167,19 @@ export function PatientsTable({
 
   // Page navigation and search are both server-driven via search params:
   // `?page=#` refetches that page, `?q=` refetches the office-wide matches.
+  // Both run as transitions so `isPending` can mark the rows on screen as
+  // stale; paginating additionally remounts the page's Suspense boundary, which
+  // swaps the whole table for a skeleton.
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = React.useTransition();
   const goToPage = React.useCallback(
     (nextPage: number) => {
       const clamped = Math.min(Math.max(1, nextPage), pageCount);
       const params = new URLSearchParams(searchParams.toString());
       params.set("page", String(clamped));
-      router.push(`${pathname}?${params.toString()}`);
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
     },
     [pageCount, pathname, router, searchParams]
   );
@@ -194,7 +199,7 @@ export function PatientsTable({
       if (next) params.set("q", next);
       else params.delete("q");
       params.delete("page");
-      router.push(`${pathname}?${params.toString()}`);
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
     }, 300);
     return () => clearTimeout(timeout);
   }, [searchInput, search, pathname, router, searchParams]);
@@ -280,8 +285,15 @@ export function PatientsTable({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border">
+      {/* Table — dimmed while a search is in flight, so the rows still on
+          screen read as stale without the input losing focus. */}
+      <div
+        className={cn(
+          "overflow-hidden rounded-lg border transition-opacity",
+          isPending && "pointer-events-none opacity-50"
+        )}
+        aria-busy={isPending}
+      >
         <Table>
           <TableHeader className="bg-blue-600 sticky top-0 z-10 [&_th]:text-white">
             {table.getHeaderGroups().map((headerGroup) => (
