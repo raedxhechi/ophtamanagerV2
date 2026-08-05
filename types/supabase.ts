@@ -78,6 +78,112 @@ export type Database = {
         }
         Relationships: []
       }
+      draft_orders: {
+        Row: {
+          application_date: string | null
+          created_at: string
+          created_by: string | null
+          delivery_date: string | null
+          doctor_office_id: string
+          id: string
+          medicine_id: string | null
+          quantity: number | null
+          updated_at: string
+        }
+        Insert: {
+          application_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string | null
+          doctor_office_id?: string
+          id?: string
+          medicine_id?: string | null
+          quantity?: number | null
+          updated_at?: string
+        }
+        Update: {
+          application_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string | null
+          doctor_office_id?: string
+          id?: string
+          medicine_id?: string | null
+          quantity?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_orders_doctor_office_id_fkey"
+            columns: ["doctor_office_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_office"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_orders_medicine_id_fkey"
+            columns: ["medicine_id"]
+            isOneToOne: false
+            referencedRelation: "medicine"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draft_suborders: {
+        Row: {
+          created_at: string
+          draft_order_id: string
+          id: string
+          invoice_type: Database["public"]["Enums"]["invoice_types"] | null
+          left_eye: boolean | null
+          patient_id: string
+          right_eye: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          draft_order_id: string
+          id?: string
+          invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
+          left_eye?: boolean | null
+          patient_id: string
+          right_eye?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          draft_order_id?: string
+          id?: string
+          invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
+          left_eye?: boolean | null
+          patient_id?: string
+          right_eye?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_suborders_draft_order_id_fkey"
+            columns: ["draft_order_id"]
+            isOneToOne: false
+            referencedRelation: "draft_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_suborders_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insurance_companies: {
         Row: {
           created_at: string

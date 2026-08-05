@@ -28,6 +28,7 @@ export default function NewOrderPage() {
     <Card className='mx-auto flex w-full max-w-[1100px] flex-col bg-[#FAF9F6] p-6'>
       <CreateOrderForm
         onFinish={() => router.push('/orders')}
+        onDraftFinish={() => router.push('/draft-orders')}
         type={draftId ? 'draft' : 'new'}
         draftOrder={draftOrder}
       />

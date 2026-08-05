@@ -21,7 +21,8 @@
     "viewPatients": "Patienten anzeigen",
     "addPatient": "Neuen Patienten hinzufügen",
     "viewOrders": "Bestellungen anzeigen",
-    "addOrder": "Neue Bestellung hinzufügen"
+    "addOrder": "Neue Bestellung hinzufügen",
+    "viewDraftOrders": "Geparkte Bestellungen"
   },
   "language": {
     "label": "Sprache",
@@ -37,6 +38,14 @@
         "error": {
           "title": "Etwas ist schiefgelaufen",
           "description": "Die Bestellung konnte nicht erstellt werden."
+        },
+        "draftSuccess": {
+          "title": "Bestellung geparkt",
+          "description": "Der Entwurf wurde erfolgreich gespeichert."
+        },
+        "draftError": {
+          "title": "Etwas ist schiefgelaufen",
+          "description": "Der Entwurf konnte nicht gespeichert werden."
         }
       }
     },

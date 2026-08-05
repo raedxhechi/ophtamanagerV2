@@ -21,7 +21,8 @@
     "viewPatients": "View Patients",
     "addPatient": "Add a new patient",
     "viewOrders": "View Orders",
-    "addOrder": "Add a new order"
+    "addOrder": "Add a new order",
+    "viewDraftOrders": "Draft orders"
   },
   "language": {
     "label": "Language",
@@ -37,6 +38,14 @@
         "error": {
           "title": "Something went wrong",
           "description": "The order could not be created."
+        },
+        "draftSuccess": {
+          "title": "Order parked",
+          "description": "The draft was saved successfully."
+        },
+        "draftError": {
+          "title": "Something went wrong",
+          "description": "The draft could not be saved."
         }
       }
     },

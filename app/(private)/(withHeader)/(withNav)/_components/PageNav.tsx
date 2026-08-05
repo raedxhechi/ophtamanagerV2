@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ClipboardList,
+  FileClock,
   PackagePlus,
   UserPlus,
   Users,
@@ -15,7 +16,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
-  labelKey: "viewPatients" | "addPatient" | "viewOrders" | "addOrder";
+  labelKey:
+    | "viewPatients"
+    | "addPatient"
+    | "viewOrders"
+    | "addOrder"
+    | "viewDraftOrders";
   href: string;
   icon: LucideIcon;
   color: "blue" | "black";
@@ -28,6 +34,12 @@ const leftItems: NavItem[] = [
 
 const rightItems: NavItem[] = [
   { labelKey: "viewOrders", href: "/orders", icon: ClipboardList, color: "black" },
+  {
+    labelKey: "viewDraftOrders",
+    href: "/draft-orders",
+    icon: FileClock,
+    color: "black",
+  },
   { labelKey: "addOrder", href: "/orders/new", icon: PackagePlus, color: "black" },
 ];
 

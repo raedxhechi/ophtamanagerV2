@@ -1,28 +1,32 @@
 'use client'
 
 import {
-  listOrders,
-  createOrder,
   listDraftOrders,
   getDraftOrder,
   createDraftOrder,
+  updateDraftOrder,
   deleteDraftOrder,
 } from '@/api/browser'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { queryClient } from './provider'
-import { de } from 'date-fns/locale'
 
-type Operation = 'list' | 'get' | 'create' | 'delete'
+import type { CreateDraftOrderInput } from '@/types'
+
+type Operation = 'list' | 'get' | 'create' | 'update' | 'delete'
 
 export const getDraftOrdersKey = (operation: Operation) => ['draftOrders', operation]
+
+// Every mutation touches the list and may touch a single draft, so both are
+// invalidated together.
+const invalidateDraftOrders = () => {
+  queryClient.invalidateQueries({ queryKey: getDraftOrdersKey('list') })
+  queryClient.invalidateQueries({ queryKey: getDraftOrdersKey('get') })
+}
 
 export const useListDraftOrders = () =>
   useQuery({
     queryKey: getDraftOrdersKey('list'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    queryFn: (options?: any) => {
-      return listDraftOrders(options)
-    },
+    queryFn: () => listDraftOrders(),
   })
 
 export const useGetDraftOrder = (id?: string | null) =>
@@ -34,16 +38,19 @@ export const useGetDraftOrder = (id?: string | null) =>
 
 export const useCreateDraftOrder = () =>
   useMutation({
-    mutationFn: createDraftOrder,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getDraftOrdersKey('list') })
-    },
+    mutationFn: (data: CreateDraftOrderInput) => createDraftOrder(data),
+    onSuccess: invalidateDraftOrders,
+  })
+
+export const useUpdateDraftOrder = () =>
+  useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateDraftOrderInput }) =>
+      updateDraftOrder(id, data),
+    onSuccess: invalidateDraftOrders,
   })
 
 export const useDeleteDraftOrder = () =>
   useMutation({
-    mutationFn: deleteDraftOrder,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getDraftOrdersKey('list') })
-    },
+    mutationFn: (id: string) => deleteDraftOrder(id),
+    onSuccess: invalidateDraftOrders,
   })

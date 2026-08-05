@@ -4,6 +4,7 @@ import type { Database } from "./supabase";
 // Re-exports
 // ---------------------------------------------------------------------------
 export * from "./orders";
+export * from "./draftOrders";
 
 // ---------------------------------------------------------------------------
 // Table row types
