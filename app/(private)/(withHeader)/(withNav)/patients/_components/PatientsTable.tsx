@@ -20,6 +20,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type FilterFn,
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
@@ -68,6 +69,19 @@ export type PatientRow = Patient & {
 function orDash(value: string | null): React.ReactNode {
   return value ? value : <span className="text-muted-foreground">—</span>;
 }
+
+// Substring match across every column, but the date_of_birth column is compared
+// on its displayed dd.mm.yyyy form so a user can search by typing e.g.
+// "29.03.1940" even though the raw value is stored as ISO (1940-03-29).
+const globalFilterFn: FilterFn<PatientRow> = (row, columnId, filterValue) => {
+  const search = String(filterValue).toLowerCase();
+  const raw = row.getValue(columnId);
+  const value =
+    columnId === "date_of_birth"
+      ? formatDate(raw as string | null | undefined)
+      : String(raw ?? "");
+  return value.toLowerCase().includes(search);
+};
 
 /** Column headers are keyed by column id under the `headers` message group. */
 type TFn = (key: string) => string;
@@ -187,7 +201,7 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
     state: { sorting, globalFilter, columnVisibility },
     getRowId: (row) => row.id,
     meta: { subOrdersLoading },
-    globalFilterFn: "includesString",
+    globalFilterFn,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnVisibilityChange: setColumnVisibility,

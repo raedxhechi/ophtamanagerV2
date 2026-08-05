@@ -91,6 +91,24 @@ export const updatePatient = async ({ id, data }: { id: string; data: any }) => 
   return result
 }
 
+// date_of_birth is stored as ISO (yyyy-mm-dd), so a token the user types in the
+// German dd.mm.yyyy form won't ilike-match it directly. Convert such tokens to
+// the matching ISO fragment: "29.03.1940" -> "1940-03-29", "29.03" -> "-03-29".
+// Returns null when the token isn't date-shaped.
+const germanDateToIsoFragment = (token: string): string | null => {
+  const full = token.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (full) {
+    const [, dd, mm, yyyy] = full
+    return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+  }
+  const dayMonth = token.match(/^(\d{1,2})\.(\d{1,2})$/)
+  if (dayMonth) {
+    const [, dd, mm] = dayMonth
+    return `-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+  }
+  return null
+}
+
 // Build the search across the columns that used to live in `searchText`. Every
 // whitespace-separated token must match (in any order) against at least one of
 // the name / insurance / address columns.
@@ -109,10 +127,14 @@ const applyPatientSearch = <T extends { or: (f: string) => T; and: (f: string) =
     'zipcode',
   ]
 
-  return tokens.reduce(
-    (q, token) => q.or(columns.map((col) => `${col}.ilike.%${token}%`).join(',')),
-    query
-  )
+  return tokens.reduce((q, token) => {
+    const conditions = columns.map((col) => `${col}.ilike.%${token}%`)
+    const isoFragment = germanDateToIsoFragment(token)
+    if (isoFragment) {
+      conditions.push(`date_of_birth.ilike.%${isoFragment}%`)
+    }
+    return q.or(conditions.join(','))
+  }, query)
 }
 
 // Fetch every patient the current office can see (paged internally). Used by the
