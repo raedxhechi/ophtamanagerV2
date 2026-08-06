@@ -18,7 +18,13 @@ export type TableSettings = {
   columnVisibility?: Record<string, boolean>;
 };
 
-/** The user_settings columns that hold a TableSettings blob. */
+/**
+ * The user_settings columns that hold a TableSettings blob. The `admin_*` keys
+ * belong to the cross-office admin lists (app/admin), which are separate tables
+ * with their own columns — see the migration that adds them.
+ */
 export type TableSettingsKey =
   | "orders_table_settings"
-  | "patient_table_settings";
+  | "patient_table_settings"
+  | "admin_patients_settings"
+  | "admin_orders_settings";

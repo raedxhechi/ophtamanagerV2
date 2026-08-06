@@ -18,11 +18,23 @@ const POLICY_SELECT = `
   )
 `
 
-export const listPolicies = async () => {
-  const { data, error } = await client
+/**
+ * `doctorOfficeId` is only needed by callers RLS doesn't already scope: an
+ * office user sees their own office's policies either way, but an admin sees
+ * every office's, and the union of them would decide which medicines a public
+ * insurer covers — the rule the order form enforces — from the wrong office.
+ */
+export const listPolicies = async (doctorOfficeId?: string) => {
+  let query = client
     .from('insurance_policy')
     .select(POLICY_SELECT)
     .order('created_at', { ascending: false })
+
+  if (doctorOfficeId) {
+    query = query.eq('doctor_office_id', doctorOfficeId)
+  }
+
+  const { data, error } = await query
 
   if (error) throw error
   return (data ?? []) as unknown as InsurancePolicyWithRelations[]

@@ -12,6 +12,11 @@ export interface CreateOrderTableProps {
   onChange: (value: SubOrderInput[]) => void
   medicinesByCompany: Record<string, Medicine[]>
   medicineId: string
+  /**
+   * Restricts the picker to one office's patients. Office users leave it unset
+   * — RLS already scopes them; an admin picks patients for a named office.
+   */
+  doctorOfficeId?: string
 }
 
 const patientToSubOrder = (patient: PatientWithInsuranceCompany, index: number) => ({
@@ -31,13 +36,14 @@ export const CreateOrderTable = ({
   onChange,
   medicinesByCompany,
   medicineId,
+  doctorOfficeId,
 }: CreateOrderTableProps) => {
   const [search, setSearch] = useState('')
 
   // Server-side infinite scroll: newest patients first, searchText matches while
   // searching, 20 fetched per page as the user scrolls to the bottom.
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useSearchPatientsInfinite(search)
+    useSearchPatientsInfinite(search, doctorOfficeId)
 
   const patients = useMemo(() => data?.pages.flat() ?? [], [data])
 

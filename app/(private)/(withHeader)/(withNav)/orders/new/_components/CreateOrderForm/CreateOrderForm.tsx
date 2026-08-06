@@ -30,15 +30,31 @@ export interface CreateOrderFormProps {
   onDraftFinish?: () => void
   type: 'new' | 'draft'
   draftOrder?: DraftOrder
+  /**
+   * Which office the order is for. Office users leave this unset — RLS scopes
+   * them to their own office and the DB fills the column in. An admin has no
+   * office of their own, so `/admin/orders` names one explicitly: it scopes the
+   * patient picker and the policies that decide medicine coverage, and it fills
+   * the order's `doctor_office_id`.
+   */
+  doctorOfficeId?: string
+  /**
+   * Whether the order can be parked as a draft. Drafts are an office user's
+   * scratch pad — they belong to the office that will come back and finish
+   * them — so the admin form leaves the button out.
+   */
+  allowDraft?: boolean
 }
 
 export const CreateOrderForm = ({
   onFinish,
   onDraftFinish,
   draftOrder,
+  doctorOfficeId,
+  allowDraft = true,
 }: CreateOrderFormProps) => {
   const t = useTranslations()
-  const { data: insurancePolicies } = useListPolicies()
+  const { data: insurancePolicies } = useListPolicies(doctorOfficeId)
   const { data: supportedMedicines } = useListMedicines()
 
   const [view, setView] = useState<'setupOrder' | 'ConfirmOrder'>('setupOrder')
@@ -172,6 +188,9 @@ export const CreateOrderForm = ({
       application_date: format(data.applicationDate, 'yyyy-MM-dd'),
       delivery_date: format(data.deliveryDate, 'yyyy-MM-dd'),
       medicine_id: data.medicine,
+      // Left out for office users so the column default (current_office_id())
+      // still applies.
+      ...(doctorOfficeId ? { doctor_office_id: doctorOfficeId } : {}),
       quantity: data.subOrders.reduce((count, patient) => {
         return count + (patient.leftEye ? 1 : 0) + (patient.rightEye ? 1 : 0)
       }, 0),
@@ -210,6 +229,8 @@ export const CreateOrderForm = ({
       medicinesByCompany={medicineByCompany}
       onSaveDraft={handleCreateDraft}
       draftLoading={draftPending}
+      doctorOfficeId={doctorOfficeId}
+      allowDraft={allowDraft}
     />
   ) : (
     <ConfirmOrder

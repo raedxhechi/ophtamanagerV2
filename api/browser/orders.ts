@@ -100,8 +100,10 @@ export async function listOrdersPage(
 }
 
 // Input shape matches the create-order form: a medicine id, application/delivery
-// dates, and the suborders to create. `doctor_office_id` is filled by the DB
-// default (current_office_id()), so it isn't set here.
+// dates, and the suborders to create. `doctor_office_id` is normally left to the
+// DB default (current_office_id()); it's only passed by callers with no office
+// of their own — an admin creating an order on an office's behalf, where the
+// default would resolve to null and fail the not-null constraint.
 export const createOrder = async (data: any) => {
   const subOrders: any[] = data.subOrders ?? data.suborders ?? []
 
@@ -113,6 +115,8 @@ export const createOrder = async (data: any) => {
     return total + (left ? 1 : 0) + (right ? 1 : 0)
   }, 0)
 
+  const doctorOfficeId = data.doctorOfficeId ?? data.doctor_office_id
+
   const { data: order, error } = await client
     .from('orders')
     .insert({
@@ -120,6 +124,9 @@ export const createOrder = async (data: any) => {
       quantity: data.quantity ?? eyeCount,
       application_date: toDateOnly(data.applicationDate ?? data.application_date),
       delivery_date: toDateOnly(data.deliveryDate ?? data.delivery_date),
+      // Omitted rather than sent as null when absent, so the column default
+      // still applies for office users.
+      ...(doctorOfficeId ? { doctor_office_id: doctorOfficeId } : {}),
     })
     .select()
     .single()
