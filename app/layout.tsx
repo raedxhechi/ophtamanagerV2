@@ -11,6 +11,7 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import { Analytics } from "@/components/analytics";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SystemLogFlusher } from "@/components/system-log-flusher";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -96,6 +97,7 @@ export default async function RootLayout({
               <ActiveThemeProvider >
                 {/* <NuqsAdapter> */}
                 {children}
+                <SystemLogFlusher />
                 <Toaster position="top-center" />
                 {/* </NuqsAdapter> */}
                 <TailwindIndicator />

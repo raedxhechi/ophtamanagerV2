@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createServerLoggingFetch } from '@/lib/logging/server'
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
@@ -22,6 +23,19 @@ export async function updateSession(request: NextRequest) {
                     cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
                 },
             },
+            global: {
+                // This client runs on every navigation, so only its *failures*
+                // are logged (shouldLog() drops the successes): a row per page
+                // view saying the session is still fine would bury the log,
+                // while a refresh that comes back 401 is the expired-session
+                // event the audit trail is there to explain.
+                fetch: createServerLoggingFetch('proxy', {
+                    userAgent: request.headers.get('user-agent'),
+                    ip:
+                        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+                        request.headers.get('x-real-ip'),
+                }),
+            },
         }
     )
     // Do not run code between createServerClient and
@@ -38,7 +52,12 @@ export async function updateSession(request: NextRequest) {
     const isPublicPath =
         pathname.startsWith('/login') ||
         pathname.startsWith('/confirm_email') ||
-        pathname.startsWith('/auth')
+        pathname.startsWith('/auth') ||
+        // The log ingest endpoint must answer a logged-out caller: its whole
+        // job is to record calls that failed because the session was gone, and
+        // redirecting it to /login would hand the queue a 200 (the login page)
+        // and make it discard the batch it was trying to deliver.
+        pathname.startsWith('/api/system-logs')
     if (!user && !isPublicPath) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'

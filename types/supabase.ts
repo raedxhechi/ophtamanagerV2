@@ -526,6 +526,96 @@ export type Database = {
           },
         ]
       }
+      system_logs: {
+        Row: {
+          action: string
+          actor_verified: boolean
+          client_event_id: string
+          doctor_office_id: string | null
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          id: number
+          ip: string | null
+          metadata: Json | null
+          method: string | null
+          occurred_at: string
+          ok: boolean
+          path: string | null
+          queued: boolean
+          received_at: string
+          source: string
+          status: number | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_role: Database["public"]["Enums"]["user_role"] | null
+        }
+        Insert: {
+          action: string
+          actor_verified?: boolean
+          client_event_id: string
+          doctor_office_id?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: never
+          ip?: string | null
+          metadata?: Json | null
+          method?: string | null
+          occurred_at?: string
+          ok: boolean
+          path?: string | null
+          queued?: boolean
+          received_at?: string
+          source: string
+          status?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Update: {
+          action?: string
+          actor_verified?: boolean
+          client_event_id?: string
+          doctor_office_id?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: never
+          ip?: string | null
+          metadata?: Json | null
+          method?: string | null
+          occurred_at?: string
+          ok?: boolean
+          path?: string | null
+          queued?: boolean
+          received_at?: string
+          source?: string
+          status?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_logs_doctor_office_id_fkey"
+            columns: ["doctor_office_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_office"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_data: {
         Row: {
           created_at: string
@@ -569,6 +659,8 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          admin_orders_settings: Json | null
+          admin_patients_settings: Json | null
           created_at: string
           orders_table_settings: Json | null
           patient_table_settings: Json | null
@@ -576,6 +668,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_orders_settings?: Json | null
+          admin_patients_settings?: Json | null
           created_at?: string
           orders_table_settings?: Json | null
           patient_table_settings?: Json | null
@@ -583,6 +677,8 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          admin_orders_settings?: Json | null
+          admin_patients_settings?: Json | null
           created_at?: string
           orders_table_settings?: Json | null
           patient_table_settings?: Json | null
@@ -606,6 +702,29 @@ export type Database = {
     Functions: {
       current_office_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      orders_build_search_text: {
+        Args: { o: Database["public"]["Tables"]["orders"]["Row"] }
+        Returns: string
+      }
+      patients_build_search_text: {
+        Args: { p: Database["public"]["Tables"]["patients"]["Row"] }
+        Returns: string
+      }
+      prune_system_logs: { Args: { p_retain?: string }; Returns: number }
+      suborders_build_search_text: {
+        Args: { s: Database["public"]["Tables"]["suborders"]["Row"] }
+        Returns: string
+      }
+      system_logs_facets: {
+        Args: {
+          p_action?: string
+          p_office?: string
+          p_search?: string
+          p_status?: number
+          p_user?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       gender: "male" | "female" | "other"
