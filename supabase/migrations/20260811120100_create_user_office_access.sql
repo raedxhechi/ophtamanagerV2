@@ -93,10 +93,17 @@ create trigger user_data_sync_office_access_after_write
 -- current_office_id().
 --
 -- Returns an array rather than a set so callers can wrap it in a scalar
--- subquery: written as `col = any ((select public.current_office_ids()))` the
--- planner evaluates it once per query as an InitPlan instead of once per row.
--- The double parentheses are required — `= any (select ...)` parses as the
--- subquery form of ANY and fails on a uuid vs uuid[] type mismatch.
+-- subquery: written as `col = any ((select public.current_office_ids())::uuid[])`
+-- the planner evaluates it once per query as an InitPlan instead of once per row.
+--
+-- The ::uuid[] cast is load-bearing, and adding parentheses is not a substitute
+-- for it. ANY has two forms — ANY (subquery) and ANY (array expression) — and
+-- the grammar rule for the subquery form recurses over nested parentheses, so
+-- `= any ((select f()))` is still the subquery form: it compares uuid against
+-- the uuid[] the subquery yields per row and fails with "operator does not
+-- exist: uuid = uuid[]". Casting makes the operand a TypeCast rather than a
+-- parenthesised SELECT, which selects the array form while leaving the
+-- uncorrelated sub-select inside it free to be hoisted into an InitPlan.
 create or replace function public.current_office_ids()
 returns uuid[]
 language sql
@@ -192,45 +199,45 @@ create policy "Users can view their own office access"
 
 alter policy "Users can view their connected doctor office"
     on public.doctor_office
-    using (id = any ((select public.current_office_ids())));
+    using (id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can view their office's users"
     on public.user_data
-    using (doctor_office_id = any ((select public.current_office_ids())));
+    using (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users have full access to their patients"
     on public.patients
-    using (doctor_office_id = any ((select public.current_office_ids())))
-    with check (doctor_office_id = any ((select public.current_office_ids())));
+    using (doctor_office_id = any ((select public.current_office_ids())::uuid[]))
+    with check (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can view their orders"
     on public.orders
-    using (doctor_office_id = any ((select public.current_office_ids())));
+    using (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can create orders for their office"
     on public.orders
-    with check (doctor_office_id = any ((select public.current_office_ids())));
+    with check (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can view their draft orders"
     on public.draft_orders
-    using (doctor_office_id = any ((select public.current_office_ids())));
+    using (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can create draft orders for their office"
     on public.draft_orders
-    with check (doctor_office_id = any ((select public.current_office_ids())));
+    with check (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can update their draft orders"
     on public.draft_orders
-    using (doctor_office_id = any ((select public.current_office_ids())))
-    with check (doctor_office_id = any ((select public.current_office_ids())));
+    using (doctor_office_id = any ((select public.current_office_ids())::uuid[]))
+    with check (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can delete their draft orders"
     on public.draft_orders
-    using (doctor_office_id = any ((select public.current_office_ids())));
+    using (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 alter policy "Office users can view their insurance policies"
     on public.insurance_policy
-    using (doctor_office_id = any ((select public.current_office_ids())));
+    using (doctor_office_id = any ((select public.current_office_ids())::uuid[]));
 
 -- ---------------------------------------------------------------------------
 -- What a manager gets beyond a doctor.
@@ -249,11 +256,11 @@ create policy "Managers can update orders in their offices"
     to authenticated
     using (
         public.is_manager()
-        and doctor_office_id = any ((select public.current_office_ids()))
+        and doctor_office_id = any ((select public.current_office_ids())::uuid[])
     )
     with check (
         public.is_manager()
-        and doctor_office_id = any ((select public.current_office_ids()))
+        and doctor_office_id = any ((select public.current_office_ids())::uuid[])
     );
 
 create policy "Managers can delete orders in their offices"
@@ -262,7 +269,7 @@ create policy "Managers can delete orders in their offices"
     to authenticated
     using (
         public.is_manager()
-        and doctor_office_id = any ((select public.current_office_ids()))
+        and doctor_office_id = any ((select public.current_office_ids())::uuid[])
     );
 
 create policy "Managers can update suborders of their orders"
