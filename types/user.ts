@@ -8,7 +8,7 @@ export type UserData = Database["public"]["Tables"]["user_data"]["Row"];
 /** A row from the public.doctor_office table. */
 export type DoctorOffice = Database["public"]["Tables"]["doctor_office"]["Row"];
 
-/** The user's role enum (admin | doctor | assistant | pharmacist). */
+/** The user's role enum (admin | doctor | manager | assistant | pharmacist). */
 export type UserRole = Database["public"]["Enums"]["user_role"];
 
 /** A user_data row with its connected doctor office joined in. */

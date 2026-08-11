@@ -1,0 +1,13 @@
+-- Add the 'manager' role: a user who works across several doctor offices and
+-- holds more privileges inside them than a doctor does.
+--
+-- This lives in its own migration on purpose. Postgres lets you add an enum
+-- value inside a transaction, but the new value cannot be *referenced* until
+-- that transaction commits — and the Supabase CLI wraps each migration file in
+-- one transaction. The table, functions and policies that mention 'manager'
+-- therefore follow in the next migration.
+--
+-- Placed after 'doctor' so the enum's sort order still reads as an escalating
+-- scale; nothing depends on that ordering (see public.is_manager()), it just
+-- keeps `order by role` output sensible.
+alter type public.user_role add value if not exists 'manager' after 'doctor';
