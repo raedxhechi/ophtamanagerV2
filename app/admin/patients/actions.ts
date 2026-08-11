@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { mirrorPatientToDirectus } from "@/directus/mirror";
 import { createClient } from "@/supabase/server";
 import type { Database } from "@/types/supabase";
 
@@ -73,17 +74,33 @@ export async function createPatientAsAdmin(
     return { error: "Invalid date of birth." };
   }
 
-  const { error } = await supabase.from("patients").insert({
-    doctor_office_id,
-    first_name,
-    last_name,
-    date_of_birth,
-    ...patientColumns(formData),
-  });
+  // Required so the patient can be mirrored into Directus, where
+  // insuranceCompany is NOT NULL. The form marks it required too; this is the
+  // half that a submission bypassing the browser cannot skip.
+  if (!field(formData, "insurance_company_id")) {
+    return { error: "An insurance company is required." };
+  }
+
+  const { data: patient, error } = await supabase
+    .from("patients")
+    .insert({
+      doctor_office_id,
+      first_name,
+      last_name,
+      date_of_birth,
+      ...patientColumns(formData),
+    })
+    .select("id")
+    .single();
 
   if (error) {
     return { error: error.message };
   }
+
+  // Copy the patient into the legacy Directus backend, now that it has an id.
+  // It never throws: a Directus failure is logged server-side and the patient
+  // is reported as created regardless, which it is.
+  await mirrorPatientToDirectus(supabase, patient.id);
 
   revalidatePath("/admin/patients");
   return { success: true };
@@ -132,6 +149,11 @@ export async function updatePatientAsAdmin(
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date_of_birth)) {
     return { error: "Invalid date of birth." };
+  }
+
+  // Every patient keeps an insurance company — see the create action above.
+  if (!field(formData, "insurance_company_id")) {
+    return { error: "An insurance company is required." };
   }
 
   const { error } = await supabase

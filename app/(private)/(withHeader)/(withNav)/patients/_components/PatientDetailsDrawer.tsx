@@ -184,10 +184,16 @@ export function PatientDetailsDrawer({
               <section className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="insurance_company_id">
-                    {t("headers.insurance_company")}
+                    {t("headers.insurance_company")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
+                  {/* Required: Directus mirrors every patient and its
+                      insuranceCompany column is NOT NULL, so a patient left
+                      without one cannot be copied across. See
+                      directus/mirror.ts. */}
                   <Select
                     name="insurance_company_id"
+                    required
                     defaultValue={patient.insurance_company_id ?? undefined}
                     disabled={companiesLoading}
                   >

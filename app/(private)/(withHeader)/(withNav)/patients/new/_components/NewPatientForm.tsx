@@ -83,7 +83,9 @@ export function NewPatientForm() {
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <div className="flex items-center gap-2">
-            <Label htmlFor="insurance_company_id">Insurance company</Label>
+            <Label htmlFor="insurance_company_id">
+              Insurance company <span className="text-destructive">*</span>
+            </Label>
             {companiesLoading ? (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Loader2 className="size-3 animate-spin" />
@@ -91,7 +93,10 @@ export function NewPatientForm() {
               </span>
             ) : null}
           </div>
-          <Select name="insurance_company_id" disabled={companiesLoading}>
+          {/* Required: Directus mirrors every patient and its insuranceCompany
+              column is NOT NULL, so a patient saved without one cannot be
+              copied across. See directus/mirror.ts. */}
+          <Select name="insurance_company_id" required disabled={companiesLoading}>
             <SelectTrigger id="insurance_company_id" className="w-full">
               <SelectValue
                 placeholder={

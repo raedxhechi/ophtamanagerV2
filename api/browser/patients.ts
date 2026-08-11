@@ -4,6 +4,7 @@ import type { Patient, PatientWithInsuranceCompany } from '@/types'
 import type { TablesInsert, TablesUpdate } from '@/types/supabase'
 
 import { client } from './client'
+import { mirrorToDirectus } from './directusMirror'
 
 // Columns + relations the patient views need. Mirrors the old Directus field
 // list: the patient, their insurance company, and their suborders (each with
@@ -74,6 +75,11 @@ export const addPatient = async (data: any) => {
     .single()
 
   if (error) throw error
+
+  // Copy the patient into the legacy Directus backend. Fire-and-forget: the row
+  // is already committed here and a Directus failure must not undo it.
+  mirrorToDirectus('patient', result.id)
+
   return result
 }
 
