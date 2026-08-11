@@ -78,6 +78,112 @@ export type Database = {
         }
         Relationships: []
       }
+      draft_orders: {
+        Row: {
+          application_date: string | null
+          created_at: string
+          created_by: string | null
+          delivery_date: string | null
+          doctor_office_id: string
+          id: string
+          medicine_id: string | null
+          quantity: number | null
+          updated_at: string
+        }
+        Insert: {
+          application_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string | null
+          doctor_office_id?: string
+          id?: string
+          medicine_id?: string | null
+          quantity?: number | null
+          updated_at?: string
+        }
+        Update: {
+          application_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string | null
+          doctor_office_id?: string
+          id?: string
+          medicine_id?: string | null
+          quantity?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_orders_doctor_office_id_fkey"
+            columns: ["doctor_office_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_office"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_orders_medicine_id_fkey"
+            columns: ["medicine_id"]
+            isOneToOne: false
+            referencedRelation: "medicine"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draft_suborders: {
+        Row: {
+          created_at: string
+          draft_order_id: string
+          id: string
+          invoice_type: Database["public"]["Enums"]["invoice_types"] | null
+          left_eye: boolean | null
+          patient_id: string
+          right_eye: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          draft_order_id: string
+          id?: string
+          invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
+          left_eye?: boolean | null
+          patient_id: string
+          right_eye?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          draft_order_id?: string
+          id?: string
+          invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
+          left_eye?: boolean | null
+          patient_id?: string
+          right_eye?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_suborders_draft_order_id_fkey"
+            columns: ["draft_order_id"]
+            isOneToOne: false
+            referencedRelation: "draft_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_suborders_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insurance_companies: {
         Row: {
           created_at: string
@@ -236,10 +342,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           delivery_date: string | null
+          directus_id: number | null
           doctor_office_id: string
           id: string
           medicine_id: string
           quantity: number
+          search_text: string | null
           updated_at: string
         }
         Insert: {
@@ -247,10 +355,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           delivery_date?: string | null
+          directus_id?: number | null
           doctor_office_id?: string
           id?: string
           medicine_id: string
           quantity: number
+          search_text?: string | null
           updated_at?: string
         }
         Update: {
@@ -258,10 +368,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           delivery_date?: string | null
+          directus_id?: number | null
           doctor_office_id?: string
           id?: string
           medicine_id?: string
           quantity?: number
+          search_text?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -302,6 +414,7 @@ export type Database = {
           insurance_company_id: string | null
           insurance_number: string | null
           last_name: string
+          search_text: string | null
           street: string | null
           updated_at: string
           zipcode: string | null
@@ -319,6 +432,7 @@ export type Database = {
           insurance_company_id?: string | null
           insurance_number?: string | null
           last_name: string
+          search_text?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
@@ -336,6 +450,7 @@ export type Database = {
           insurance_company_id?: string | null
           insurance_number?: string | null
           last_name?: string
+          search_text?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
@@ -360,32 +475,38 @@ export type Database = {
       suborders: {
         Row: {
           created_at: string
+          directus_id: number | null
           id: string
           invoice_type: Database["public"]["Enums"]["invoice_types"] | null
           left_eye: boolean
           order_id: string
           patient_id: string
           right_eye: boolean
+          search_text: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          directus_id?: number | null
           id?: string
           invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
           left_eye?: boolean
           order_id: string
           patient_id: string
           right_eye?: boolean
+          search_text?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          directus_id?: number | null
           id?: string
           invoice_type?: Database["public"]["Enums"]["invoice_types"] | null
           left_eye?: boolean
           order_id?: string
           patient_id?: string
           right_eye?: boolean
+          search_text?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -401,6 +522,96 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_logs: {
+        Row: {
+          action: string
+          actor_verified: boolean
+          client_event_id: string
+          doctor_office_id: string | null
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          id: number
+          ip: string | null
+          metadata: Json | null
+          method: string | null
+          occurred_at: string
+          ok: boolean
+          path: string | null
+          queued: boolean
+          received_at: string
+          source: string
+          status: number | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_role: Database["public"]["Enums"]["user_role"] | null
+        }
+        Insert: {
+          action: string
+          actor_verified?: boolean
+          client_event_id: string
+          doctor_office_id?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: never
+          ip?: string | null
+          metadata?: Json | null
+          method?: string | null
+          occurred_at?: string
+          ok: boolean
+          path?: string | null
+          queued?: boolean
+          received_at?: string
+          source: string
+          status?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Update: {
+          action?: string
+          actor_verified?: boolean
+          client_event_id?: string
+          doctor_office_id?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: never
+          ip?: string | null
+          metadata?: Json | null
+          method?: string | null
+          occurred_at?: string
+          ok?: boolean
+          path?: string | null
+          queued?: boolean
+          received_at?: string
+          source?: string
+          status?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_logs_doctor_office_id_fkey"
+            columns: ["doctor_office_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_office"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_data"
             referencedColumns: ["id"]
           },
         ]
@@ -446,6 +657,44 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          admin_orders_settings: Json | null
+          admin_patients_settings: Json | null
+          created_at: string
+          orders_table_settings: Json | null
+          patient_table_settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_orders_settings?: Json | null
+          admin_patients_settings?: Json | null
+          created_at?: string
+          orders_table_settings?: Json | null
+          patient_table_settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          admin_orders_settings?: Json | null
+          admin_patients_settings?: Json | null
+          created_at?: string
+          orders_table_settings?: Json | null
+          patient_table_settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -453,6 +702,29 @@ export type Database = {
     Functions: {
       current_office_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      orders_build_search_text: {
+        Args: { o: Database["public"]["Tables"]["orders"]["Row"] }
+        Returns: string
+      }
+      patients_build_search_text: {
+        Args: { p: Database["public"]["Tables"]["patients"]["Row"] }
+        Returns: string
+      }
+      prune_system_logs: { Args: { p_retain?: string }; Returns: number }
+      suborders_build_search_text: {
+        Args: { s: Database["public"]["Tables"]["suborders"]["Row"] }
+        Returns: string
+      }
+      system_logs_facets: {
+        Args: {
+          p_action?: string
+          p_office?: string
+          p_search?: string
+          p_status?: number
+          p_user?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       gender: "male" | "female" | "other"

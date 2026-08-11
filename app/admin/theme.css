@@ -1,5 +1,10 @@
+/* This file only loads on /admin routes, so the rules here are the admin's own
+   palette. Admin keeps the default white canvas instead of the warm white the
+   public site sets in globals.css; declaring it on body means portaled overlays
+   (dialog, sheet, drawer) inherit it too. */
 body {
   @apply overscroll-none bg-transparent;
+  --background: oklch(1 0 0);
 }
 
 :root {

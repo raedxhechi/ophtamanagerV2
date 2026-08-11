@@ -12,8 +12,8 @@ import { UserNav } from "./UserNav";
 
 // Pharmacy has no entity in the schema yet — still dummy data.
 const pharmacy = {
-  name: "Stadt Apotheke",
-  email: "info@stadt-apotheke.de",
+  name: "St. Alexius Apotheke",
+  email: "Alexianerplatz 1a, 41464 Neuss",
   phone: "+49 30 7654 321",
 };
 

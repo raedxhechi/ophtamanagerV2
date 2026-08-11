@@ -11,6 +11,7 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import { Analytics } from "@/components/analytics";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SystemLogFlusher } from "@/components/system-log-flusher";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -75,9 +76,6 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.dark}')
-                }
                 if (localStorage.layout) {
                   document.documentElement.classList.add('layout-' + localStorage.layout)
                 }
@@ -99,6 +97,7 @@ export default async function RootLayout({
               <ActiveThemeProvider >
                 {/* <NuqsAdapter> */}
                 {children}
+                <SystemLogFlusher />
                 <Toaster position="top-center" />
                 {/* </NuqsAdapter> */}
                 <TailwindIndicator />

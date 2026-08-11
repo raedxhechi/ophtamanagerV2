@@ -2,44 +2,30 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Columns3,
   Plus,
 } from "lucide-react";
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type SortingState,
-  type VisibilityState,
 } from "@tanstack/react-table";
 
 import { formatDate } from "@/lib/date";
+import { cn } from "@/lib/utils";
+import { useTableSettings } from "@/hooks/use-table-settings";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ColumnSelector } from "@/components/table/ColumnSelector";
+import { TableSkeleton } from "@/components/table/TableSkeleton";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -105,28 +91,110 @@ const columns: ColumnDef<OrderRow>[] = [
     },
 ];
 
-export function OrdersTable({ data }: { data: OrderRow[] }) {
+// What a user with no saved settings gets. Both are module constants because
+// useTableSettings keys its derived state off their identity.
+const columnIds = columns.map(
+  (column) => column.id ?? (column as { accessorKey: string }).accessorKey
+);
+// "Created" starts hidden; toggle it back on via "Columns".
+const defaultVisibility = { created_at: false };
+
+export function OrdersTable({
+  data,
+  page,
+  pageCount,
+  totalCount,
+  pageSize,
+  search,
+}: {
+  data: OrderRow[];
+  /** 1-based index of the currently loaded page. */
+  page: number;
+  /** Total number of pages, derived from the office's order count. */
+  pageCount: number;
+  /** The office's total (filtered) order count across all pages. */
+  totalCount: number;
+  /** Rows fetched per page. */
+  pageSize: number;
+  /** The active server-side search, mirrored from the `q` search param. */
+  search: string;
+}) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  // "Created" starts hidden; toggle it back on via "Columns".
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({ created_at: false });
+
+  // Page navigation and search are both server-driven via search params:
+  // `?page=#` refetches that page, `?q=` refetches the office-wide matches.
+  // Both run as transitions so `isPending` can mark the rows on screen as
+  // stale; paginating additionally remounts the page's Suspense boundary, which
+  // swaps the whole table for a skeleton.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = React.useTransition();
+  const goToPage = React.useCallback(
+    (nextPage: number) => {
+      const clamped = Math.min(Math.max(1, nextPage), pageCount);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(clamped));
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
+    },
+    [pageCount, pathname, router, searchParams]
+  );
+  const canPreviousPage = page > 1;
+  const canNextPage = page < pageCount;
+
+  // The search box is a controlled input seeded from the `q` param. Typing is
+  // debounced before it's committed to the URL, and committing a new search
+  // resets back to page 1.
+  const [searchInput, setSearchInput] = React.useState(search);
+  React.useEffect(() => setSearchInput(search), [search]);
+  React.useEffect(() => {
+    const next = searchInput.trim();
+    if (next === search) return;
+    const timeout = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next) params.set("q", next);
+      else params.delete("q");
+      params.delete("page");
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput, search, pathname, router, searchParams]);
+
+  // Which columns are shown and in what order: seeded from the user's saved
+  // settings and written back whenever they change it.
+  const {
+    state: columnSettings,
+    isReady,
+    onColumnOrderChange,
+    onColumnVisibilityChange,
+  } = useTableSettings({
+    settingsKey: "orders_table_settings",
+    columnIds,
+    defaultVisibility,
+  });
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter, columnVisibility },
+    state: { sorting, ...columnSettings },
     getRowId: (row) => row.id,
-    globalFilterFn: "includesString",
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
+    onColumnOrderChange,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
   });
+
+  // Hold the table back until the saved column settings have settled, so it
+  // isn't drawn in its default shape and then rearranged.
+  if (!isReady) {
+    return (
+      <TableSkeleton
+        columnCount={table.getVisibleLeafColumns().length}
+        headerClassName="bg-neutral-900"
+      />
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -134,39 +202,22 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Input
           placeholder="Search orders…"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="h-9 w-full max-w-xs"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          className="h-9 w-full max-w-xs bg-white"
         />
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Columns3 />
-                <span className="hidden lg:inline">Columns</span>
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {prettify(column.id)}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button asChild size="sm">
+          <ColumnSelector
+            table={table}
+            label={prettify}
+            triggerLabel="Columns"
+            triggerClassName="bg-white"
+          />
+          <Button
+            asChild
+            size="sm"
+            className="bg-neutral-900 text-white hover:bg-black"
+          >
             <Link href="/orders/new">
               <Plus />
               <span className="hidden lg:inline">Add order</span>
@@ -175,10 +226,17 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border">
+      {/* Table — dimmed while a search is in flight, so the rows still on
+          screen read as stale without the input losing focus. */}
+      <div
+        className={cn(
+          "overflow-hidden rounded-lg border transition-opacity",
+          isPending && "pointer-events-none opacity-50"
+        )}
+        aria-busy={isPending}
+      >
         <Table>
-          <TableHeader className="bg-muted sticky top-0 z-10">
+          <TableHeader className="bg-neutral-900 sticky top-0 z-10 [&_th]:text-white">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -198,7 +256,6 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <React.Fragment key={row.id}>
-
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -207,9 +264,12 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
                   ))}
                 </TableRow>
                    {row.getIsExpanded() && (
-                  <TableRow data-state={row.getIsSelected() && 'selected'}>
-                    <TableCell colSpan={columns.length} className='py-0 pr-0'>
-                      <div className='flex h-full my-[-0.5rem] ml-[60px]'>
+                  <TableRow
+                    data-state={row.getIsSelected() && 'selected'}
+                    className='bg-background hover:bg-background'
+                  >
+                    <TableCell colSpan={columns.length} className='p-4 pl-[60px] bg-background'>
+                      <div className='flex h-full'>
                         <SubordersTable
                           subOrders={row.original.suborders.map((suborder) => ({
                             ...suborder,
@@ -236,45 +296,25 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination — server-driven via the `page` search param. */}
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground hidden text-sm lg:block">
-          {table.getFilteredRowModel().rows.length} order(s)
+          {totalCount} order(s)
         </div>
         <div className="flex w-full items-center gap-8 lg:w-fit">
-          <div className="hidden items-center gap-2 lg:flex">
-            <Label htmlFor="rows-per-page" className="text-sm font-medium">
-              Rows per page
-            </Label>
-            <Select
-              value={`${table.getState().pagination.pageSize}`}
-              onValueChange={(value) => table.setPageSize(Number(value))}
-            >
-              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                <SelectValue
-                  placeholder={table.getState().pagination.pageSize}
-                />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="hidden items-center gap-2 lg:flex text-sm text-muted-foreground">
+            {pageSize} per page
           </div>
           <div className="flex w-fit items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount() || 1}
+            Page {page} of {pageCount}
           </div>
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <Button
               variant="outline"
               className="hidden size-8 lg:flex"
               size="icon"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => goToPage(1)}
+              disabled={!canPreviousPage}
             >
               <span className="sr-only">Go to first page</span>
               <ChevronsLeft />
@@ -283,8 +323,8 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
               variant="outline"
               className="size-8"
               size="icon"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => goToPage(page - 1)}
+              disabled={!canPreviousPage}
             >
               <span className="sr-only">Go to previous page</span>
               <ChevronLeft />
@@ -293,8 +333,8 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
               variant="outline"
               className="size-8"
               size="icon"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => goToPage(page + 1)}
+              disabled={!canNextPage}
             >
               <span className="sr-only">Go to next page</span>
               <ChevronRight />
@@ -303,8 +343,8 @@ export function OrdersTable({ data }: { data: OrderRow[] }) {
               variant="outline"
               className="hidden size-8 lg:flex"
               size="icon"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
+              onClick={() => goToPage(pageCount)}
+              disabled={!canNextPage}
             >
               <span className="sr-only">Go to last page</span>
               <ChevronsRight />

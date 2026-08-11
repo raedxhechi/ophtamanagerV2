@@ -21,7 +21,8 @@
     "viewPatients": "View Patients",
     "addPatient": "Add a new patient",
     "viewOrders": "View Orders",
-    "addOrder": "Add a new order"
+    "addOrder": "Add a new order",
+    "viewDraftOrders": "Draft orders"
   },
   "language": {
     "label": "Language",
@@ -37,6 +38,14 @@
         "error": {
           "title": "Something went wrong",
           "description": "The order could not be created."
+        },
+        "draftSuccess": {
+          "title": "Order parked",
+          "description": "The draft was saved successfully."
+        },
+        "draftError": {
+          "title": "Something went wrong",
+          "description": "The draft could not be saved."
         }
       }
     },
@@ -111,6 +120,37 @@
     },
     "PatientTableToolbar": {
       "searchInput": "Search patients…"
+    },
+    "PatientsTable": {
+      "search": "Search patients…",
+      "columns": "Columns",
+      "addPatient": "Add patient",
+      "noResults": "No patients found.",
+      "creationDate": "Created",
+      "operationDate": "Surgery date",
+      "headers": {
+        "name": "Name",
+        "date_of_birth": "Date of birth",
+        "gender": "Gender",
+        "insurance_company": "Insurance company",
+        "insurance_number": "Insurance number",
+        "city": "City",
+        "street": "Street",
+        "house_number": "House number",
+        "zipcode": "Zipcode"
+      },
+      "details": {
+        "title": "Edit patient",
+        "subtitle": "Patient details",
+        "first_name": "First name",
+        "last_name": "Last name",
+        "uuid": "UUID",
+        "directus_id": "Directus ID",
+        "created_at": "Created at",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "cancel": "Cancel"
+      }
     },
     "DataTablePagination1": {
       "previousPage": "Previous page",

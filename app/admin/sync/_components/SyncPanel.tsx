@@ -9,12 +9,23 @@ import {
   Database,
   Loader2,
   RefreshCw,
+  StopCircle,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-import type { ImportResult, SyncCounts } from "../types";
+import type {
+  ImportResult,
+  SyncCounts,
+  SyncEvent,
+  SyncLogLevel,
+} from "../types";
+
+/** Result of a destructive "clear all" action. */
+export type ClearResult = { ok: boolean; message: string };
 
 interface SyncPanelProps {
   /** Plural entity name, e.g. "patients" or "doctor offices". */
@@ -22,24 +33,45 @@ interface SyncPanelProps {
   initialCounts: SyncCounts | null;
   initialError: string | null;
   getCounts: () => Promise<SyncCounts>;
-  runImport: () => Promise<ImportResult>;
+  /** Non-streaming import. Used when `streamPath` isn't set. */
+  runImport?: () => Promise<ImportResult>;
+  /**
+   * URL of a POST route that streams NDJSON {@link SyncEvent}s. When set, the
+   * panel shows a live terminal log + running count instead of a plain spinner.
+   */
+  streamPath?: string;
+  /**
+   * When set, a destructive "Clear all" button (with confirm) appears under the
+   * Supabase count, wiping every synced row on the Supabase side.
+   */
+  onClearAll?: () => Promise<ClearResult>;
 }
+
+type LogLine = { level: SyncLogLevel; message: string };
+type Progress = { imported: number; failed: number; total: number };
 
 function CountCard({
   label,
   value,
   loading,
+  secondary,
+  action,
 }: {
   label: string;
   value: number | null;
   loading: boolean;
+  secondary?: { label: string; value: number };
+  action?: React.ReactNode;
 }) {
   return (
     <Card className="flex-1">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {label}
+          </CardTitle>
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-3xl font-semibold tabular-nums">
@@ -49,8 +81,73 @@ function CountCard({
             (value ?? "—")
           )}
         </div>
+        {secondary ? (
+          <div
+            className={cn(
+              "mt-1 text-sm tabular-nums text-muted-foreground",
+              loading && "opacity-50"
+            )}
+          >
+            {secondary.value.toLocaleString()} {secondary.label}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+const LOG_COLORS: Record<SyncLogLevel, string> = {
+  info: "text-zinc-300",
+  success: "text-emerald-400",
+  warn: "text-amber-400",
+  error: "text-red-400",
+};
+
+/** A macOS-style terminal window streaming the import log. */
+function TerminalLog({
+  entityLabel,
+  logs,
+}: {
+  entityLabel: string;
+  logs: LogLine[];
+}) {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Keep the newest line in view as logs stream in.
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [logs]);
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-sm">
+      <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-3 py-2">
+        <span className="size-3 rounded-full bg-red-500/80" />
+        <span className="size-3 rounded-full bg-amber-500/80" />
+        <span className="size-3 rounded-full bg-emerald-500/80" />
+        <span className="ml-2 font-mono text-xs text-zinc-400">
+          import {entityLabel}
+        </span>
+      </div>
+      <div
+        ref={scrollRef}
+        className="h-64 overflow-auto p-3 font-mono text-xs leading-relaxed"
+      >
+        {logs.length === 0 ? (
+          <span className="text-zinc-500">Waiting for output…</span>
+        ) : (
+          logs.map((line, idx) => (
+            <div
+              key={idx}
+              className={cn("whitespace-pre-wrap break-words", LOG_COLORS[line.level])}
+            >
+              <span className="select-none text-zinc-600">$ </span>
+              {line.message}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -60,6 +157,8 @@ export function SyncPanel({
   initialError,
   getCounts,
   runImport,
+  streamPath,
+  onClearAll,
 }: SyncPanelProps) {
   const [counts, setCounts] = React.useState<SyncCounts | null>(initialCounts);
   const [countsError, setCountsError] = React.useState<string | null>(
@@ -69,6 +168,16 @@ export function SyncPanel({
   const [confirming, setConfirming] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
   const [result, setResult] = React.useState<ImportResult | null>(null);
+  const [logs, setLogs] = React.useState<LogLine[]>([]);
+  const [progress, setProgress] = React.useState<Progress | null>(null);
+
+  // Clear-all state.
+  const [clearConfirming, setClearConfirming] = React.useState(false);
+  const [clearing, setClearing] = React.useState(false);
+  const [clearResult, setClearResult] = React.useState<ClearResult | null>(null);
+
+  // Lets the Stop button abort the in-flight streaming import.
+  const abortRef = React.useRef<AbortController | null>(null);
 
   const refreshCounts = React.useCallback(async () => {
     setRefreshing(true);
@@ -82,46 +191,192 @@ export function SyncPanel({
     }
   }, [getCounts]);
 
+  // Streaming import: read the NDJSON body line by line, feeding the terminal
+  // log and running count as events arrive. Aborts when `signal` fires (Stop).
+  const streamImport = React.useCallback(
+    async (signal: AbortSignal) => {
+    const res = await fetch(streamPath!, { method: "POST", signal });
+    if (!res.ok || !res.body) {
+      throw new Error(`Import request failed (${res.status}).`);
+    }
+
+    const handleEvent = (event: SyncEvent) => {
+      if (event.type === "log") {
+        setLogs((prev) => [...prev, { level: event.level, message: event.message }]);
+      } else if (event.type === "progress") {
+        setProgress({
+          imported: event.imported,
+          failed: event.failed,
+          total: event.total,
+        });
+      } else if (event.type === "result") {
+        setResult(event.result);
+      }
+    };
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        if (line.trim()) handleEvent(JSON.parse(line) as SyncEvent);
+      }
+    }
+    if (buffer.trim()) handleEvent(JSON.parse(buffer) as SyncEvent);
+    },
+    [streamPath]
+  );
+
   const doImport = React.useCallback(async () => {
     setConfirming(false);
     setImporting(true);
     setResult(null);
+    setLogs([]);
+    setProgress(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      const res = await runImport();
-      setResult(res);
+      if (streamPath) {
+        await streamImport(controller.signal);
+      } else if (runImport) {
+        setResult(await runImport());
+      }
       await refreshCounts();
     } catch (e) {
-      setResult({
-        total: 0,
-        imported: 0,
-        failed: 1,
-        errors: [
-          {
-            directusId: "-",
-            message: e instanceof Error ? e.message : "Import failed.",
-          },
-        ],
-      });
+      // A user-triggered Stop aborts the fetch — report it, don't treat it as a
+      // failure.
+      if (controller.signal.aborted) {
+        setLogs((prev) => [
+          ...prev,
+          { level: "warn", message: "Import stopped by user." },
+        ]);
+        await refreshCounts();
+      } else {
+        const message = e instanceof Error ? e.message : "Import failed.";
+        setLogs((prev) => [...prev, { level: "error", message }]);
+        setResult({
+          total: 0,
+          imported: 0,
+          failed: 1,
+          errors: [{ directusId: "-", message }],
+        });
+      }
     } finally {
+      abortRef.current = null;
       setImporting(false);
     }
-  }, [runImport, refreshCounts]);
+  }, [streamPath, streamImport, runImport, refreshCounts]);
+
+  const stopImport = React.useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  const doClearAll = React.useCallback(async () => {
+    if (!onClearAll) return;
+    setClearConfirming(false);
+    setClearing(true);
+    setClearResult(null);
+    try {
+      const res = await onClearAll();
+      setClearResult(res);
+      await refreshCounts();
+    } catch (e) {
+      setClearResult({
+        ok: false,
+        message: e instanceof Error ? e.message : "Clear failed.",
+      });
+    } finally {
+      setClearing(false);
+    }
+  }, [onClearAll, refreshCounts]);
+
+  // Destructive "clear all" control, rendered inside the Supabase count card.
+  const clearAllControls = onClearAll ? (
+    clearConfirming ? (
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium text-destructive">
+          Delete all Supabase {entityLabel}?
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={doClearAll}
+            disabled={clearing}
+          >
+            {clearing ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Deleting…
+              </>
+            ) : (
+              "Yes, delete all"
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setClearConfirming(false)}
+            disabled={clearing}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    ) : (
+      <Button
+        variant="outline"
+        size="sm"
+        className="text-destructive hover:text-destructive"
+        onClick={() => {
+          setClearResult(null);
+          setClearConfirming(true);
+        }}
+        disabled={importing || clearing || counts === null}
+      >
+        <Trash2 className="size-4" />
+        Clear all
+      </Button>
+    )
+  ) : null;
 
   return (
     <div className="flex flex-col gap-6">
       {/* Counts */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-stretch gap-3">
           <CountCard
             label="In Directus"
             value={counts?.directus ?? null}
             loading={refreshing}
+            secondary={
+              counts?.secondary
+                ? {
+                    label: counts.secondary.label,
+                    value: counts.secondary.directus,
+                  }
+                : undefined
+            }
           />
-          <ArrowRight className="size-5 shrink-0 text-muted-foreground" />
+          <ArrowRight className="size-5 shrink-0 self-center text-muted-foreground" />
           <CountCard
             label="In Supabase"
             value={counts?.supabase ?? null}
             loading={refreshing}
+            secondary={
+              counts?.secondary
+                ? {
+                    label: counts.secondary.label,
+                    value: counts.secondary.supabase,
+                  }
+                : undefined
+            }
+            action={clearAllControls}
           />
         </div>
         <div>
@@ -129,7 +384,7 @@ export function SyncPanel({
             variant="ghost"
             size="sm"
             onClick={refreshCounts}
-            disabled={refreshing || importing}
+            disabled={refreshing || importing || clearing}
           >
             <RefreshCw
               className={refreshing ? "size-4 animate-spin" : "size-4"}
@@ -137,6 +392,23 @@ export function SyncPanel({
             Refresh counts
           </Button>
         </div>
+        {clearResult ? (
+          <p
+            className={cn(
+              "flex items-center gap-2 text-sm",
+              clearResult.ok
+                ? "text-green-600 dark:text-green-500"
+                : "text-destructive"
+            )}
+          >
+            {clearResult.ok ? (
+              <CheckCircle2 className="size-4" />
+            ) : (
+              <AlertCircle className="size-4" />
+            )}
+            {clearResult.message}
+          </p>
+        ) : null}
         {countsError ? (
           <p className="flex items-center gap-2 text-sm text-destructive">
             <AlertCircle className="size-4" />
@@ -189,6 +461,43 @@ export function SyncPanel({
           </div>
         )}
       </div>
+
+      {/* Live progress: running count + terminal log (streaming imports only) */}
+      {streamPath && (importing || logs.length > 0) ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            {importing ? (
+              <span className="flex items-center gap-2 font-medium">
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                Importing…
+              </span>
+            ) : null}
+            <span className="tabular-nums text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {progress?.imported ?? 0}
+              </span>
+              {progress ? ` / ${progress.total}` : null} imported
+            </span>
+            {progress && progress.failed > 0 ? (
+              <span className="font-medium text-destructive tabular-nums">
+                {progress.failed} failed
+              </span>
+            ) : null}
+            {importing ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="ml-auto"
+                onClick={stopImport}
+              >
+                <StopCircle className="size-4" />
+                Stop
+              </Button>
+            ) : null}
+          </div>
+          <TerminalLog entityLabel={entityLabel} logs={logs} />
+        </div>
+      ) : null}
 
       {/* Result */}
       {result ? (

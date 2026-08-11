@@ -91,28 +91,16 @@ export const updatePatient = async ({ id, data }: { id: string; data: any }) => 
   return result
 }
 
-// Build the search across the columns that used to live in `searchText`. Every
-// whitespace-separated token must match (in any order) against at least one of
-// the name / insurance / address columns.
-const applyPatientSearch = <T extends { or: (f: string) => T; and: (f: string) => T }>(
+// Search against the patient's denormalized `search_text` haystack (name,
+// gender in German and English, dd.mm.yyyy date of birth, address, insurance
+// number, insurance company name, id). Every whitespace-separated token must
+// appear in it, so the chained `.ilike` calls are ANDed together.
+const applyPatientSearch = <T extends { ilike: (col: string, pattern: string) => T }>(
   query: T,
   search: string
 ) => {
   const tokens = search.trim().split(/\s+/).filter(Boolean)
-  const columns = [
-    'first_name',
-    'last_name',
-    'insurance_number',
-    'date_of_birth',
-    'city',
-    'street',
-    'zipcode',
-  ]
-
-  return tokens.reduce(
-    (q, token) => q.or(columns.map((col) => `${col}.ilike.%${token}%`).join(',')),
-    query
-  )
+  return tokens.reduce((q, token) => q.ilike('search_text', `%${token}%`), query)
 }
 
 // Fetch every patient the current office can see (paged internally). Used by the
@@ -157,8 +145,19 @@ export async function listPatientsPage(page: number, pageSize: number, search = 
   return { patients: (data ?? []) as unknown as Patient[], total: count ?? 0 }
 }
 
-// Infinite-scroll picker for the order form. Newest first, optional search.
-export async function searchPatients(search = '', page = 1, limit = 20) {
+/**
+ * Infinite-scroll picker for the order form. Newest first, optional search.
+ *
+ * `doctorOfficeId` is only needed by callers RLS doesn't already scope: an
+ * office user sees their own office either way, but an admin building an order
+ * from `/admin/orders` sees every office and has to say which one it's for.
+ */
+export async function searchPatients(
+  search = '',
+  page = 1,
+  limit = 20,
+  doctorOfficeId?: string
+) {
   const from = (page - 1) * limit
   const to = from + limit - 1
 
@@ -167,6 +166,10 @@ export async function searchPatients(search = '', page = 1, limit = 20) {
     .select(PATIENT_PICKER_SELECT)
     .order('created_at', { ascending: false })
     .range(from, to)
+
+  if (doctorOfficeId) {
+    query = query.eq('doctor_office_id', doctorOfficeId)
+  }
 
   if (search.trim()) {
     query = applyPatientSearch(query as any, search) as typeof query

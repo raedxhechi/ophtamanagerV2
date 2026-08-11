@@ -29,6 +29,10 @@ export interface SetupOrderProps {
   onSubmit: (values?: any) => void
   onSaveDraft: (values?: any) => void
   draftLoading?: boolean
+  /** Scopes the patient picker; see CreateOrderForm's prop of the same name. */
+  doctorOfficeId?: string
+  /** When false the "park as draft" button is left out. */
+  allowDraft?: boolean
 }
 
 export const SetupOrder = ({
@@ -38,6 +42,8 @@ export const SetupOrder = ({
   onSubmit,
   onSaveDraft,
   draftLoading,
+  doctorOfficeId,
+  allowDraft = true,
 }: SetupOrderProps) => {
   const t = useTranslations()
 
@@ -54,8 +60,8 @@ export const SetupOrder = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className='flex-1 flex flex-col gap-4'>
-        <div className='flex justify-center items-center mb-8'>
-          <h2 className='text-xl font-semibold'>{t('component.SetupOrder.title')}</h2>
+        <div className='flex justify-center items-center mb-0'>
+          <h2 className='text-base font-semibold'>{t('component.SetupOrder.title')}</h2>
         </div>
         <div className='flex gap-4'>
           <div className='min-w-[200px]'>
@@ -152,7 +158,6 @@ export const SetupOrder = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('component.SetupOrder.form.applicationDate.label')}</FormLabel>
-                  <br />
                   <FormControl>
                     <DatePicker
                       date={field.value}
@@ -184,6 +189,7 @@ export const SetupOrder = ({
                     onChange={(value: SubOrderInput[]) => field.onChange(value)}
                     addedSubOrders={field.value}
                     medicineId={form.watch('medicine')}
+                    doctorOfficeId={doctorOfficeId}
                   />
                 </FormControl>
                 <FormMessage />
@@ -193,18 +199,20 @@ export const SetupOrder = ({
         </div>
 
         <div className='w-full flex gap-4'>
-          <div className='w-1/3 '>
-            <Button
-              type='button'
-              className='w-full'
-              disabled={!form.watch('subOrders').length}
-              loading={draftLoading}
-              onClick={handleCreateDraft}
-            >
-              Bestellung parken
-            </Button>
-          </div>
-          <div className='w-2/3 '>
+          {allowDraft && (
+            <div className='w-1/3 '>
+              <Button
+                type='button'
+                className='w-full'
+                disabled={!form.watch('subOrders').length}
+                loading={draftLoading}
+                onClick={handleCreateDraft}
+              >
+                Bestellung parken
+              </Button>
+            </div>
+          )}
+          <div className={allowDraft ? 'w-2/3 ' : 'w-full'}>
             <Button
               type='submit'
               className='w-full'

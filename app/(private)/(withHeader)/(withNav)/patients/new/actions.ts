@@ -77,3 +77,66 @@ export async function createPatient(
   revalidatePath("/patients");
   redirect("/patients");
 }
+
+export type UpdatePatientState =
+  | { error: string }
+  | { success: true }
+  | null;
+
+export async function updatePatient(
+  _prev: UpdatePatientState,
+  formData: FormData
+): Promise<UpdatePatientState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const id = field(formData, "id");
+  if (!id) {
+    return { error: "Missing patient id." };
+  }
+
+  const first_name = field(formData, "first_name");
+  const last_name = field(formData, "last_name");
+  const date_of_birth = field(formData, "date_of_birth");
+
+  if (!first_name || !last_name || !date_of_birth) {
+    return {
+      error: "First name, last name and date of birth are required.",
+    };
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date_of_birth)) {
+    return { error: "Invalid date of birth." };
+  }
+
+  // The office scoping and row ownership are enforced by RLS; the update
+  // simply targets the patient by id.
+  const { error } = await supabase
+    .from("patients")
+    .update({
+      first_name,
+      last_name,
+      date_of_birth,
+      gender: (field(formData, "gender") as Gender | null) ?? null,
+      insurance_number: field(formData, "insurance_number"),
+      insurance_company_id: field(formData, "insurance_company_id"),
+      city: field(formData, "city"),
+      street: field(formData, "street"),
+      house_number: field(formData, "house_number"),
+      zipcode: field(formData, "zipcode"),
+    })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/patients");
+  return { success: true };
+}

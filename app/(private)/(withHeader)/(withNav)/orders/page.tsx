@@ -1,36 +1,34 @@
-import type { OrderWithSubOrders } from "@/types";
-import { createClient } from "@/supabase/server";
+import { Suspense } from "react";
 
-import { OrdersTable } from "./_components/OrdersTable";
+import { OrdersData } from "./_components/OrdersData";
+import {
+  OrdersPageShell,
+  OrdersTableFallback,
+} from "./_components/OrdersPageShell";
 
-export default async function OrdersPage() {
-  const supabase = await createClient();
-
-  // RLS scopes this to the current user's office automatically. Each suborder
-  // embeds its patient (+ insurance); the parent order's medicine is embedded
-  // once at the top level and injected into each suborder in OrdersTable.
-  const { data, error } = await supabase
-    .from("orders")
-    .select(
-      "*, medicine:medicine_id(*), suborders(*, patient:patients(*, insurance_companies(*)))"
-    )
-    .order("created_at", { ascending: false });
-
-  const orders = (data ?? []) as unknown as OrderWithSubOrders[];
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
+  // Only the search params are read here — no database work — so the shell
+  // renders and streams straight away and the query below it is what suspends.
+  const { page: pageParam, q: qParam } = await searchParams;
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
+  const search = (qParam ?? "").trim();
 
   return (
-    <div className="mx-auto w-full max-w-[96rem] p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-      </div>
-
-      {error ? (
-        <p className="text-sm text-destructive">
-          Failed to load orders: {error.message}
-        </p>
-      ) : (
-        <OrdersTable data={orders} />
-      )}
-    </div>
+    <OrdersPageShell>
+      {/*
+        Keyed on the page number so paginating mounts a fresh boundary and
+        shows the skeleton immediately, rather than holding the old rows on
+        screen for as long as the query takes. Deliberately not keyed on the
+        search: search-as-you-type keeps the loaded rows (dimmed by the table
+        while the request is in flight) so the input never loses focus.
+      */}
+      <Suspense key={requestedPage} fallback={<OrdersTableFallback />}>
+        <OrdersData page={requestedPage} search={search} />
+      </Suspense>
+    </OrdersPageShell>
   );
 }

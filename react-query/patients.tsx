@@ -41,11 +41,19 @@ export const useListPatientsPage = (page: number, pageSize: number, search = '')
 // Number of patients fetched per page in the order form's picker.
 export const PATIENTS_PICKER_PAGE_SIZE = 20
 
-// Infinite scroll for the order form's patient picker.
-export const useSearchPatientsInfinite = (search = '') =>
+// Infinite scroll for the order form's patient picker. `doctorOfficeId` scopes
+// the results for callers RLS doesn't (an admin ordering on an office's behalf);
+// it's part of the key so switching offices doesn't reuse the previous list.
+export const useSearchPatientsInfinite = (search = '', doctorOfficeId?: string) =>
   useInfiniteQuery({
-    queryKey: [...getPatientsKey('list'), 'search-infinite', search],
-    queryFn: ({ pageParam }) => searchPatients(search, pageParam, PATIENTS_PICKER_PAGE_SIZE),
+    queryKey: [
+      ...getPatientsKey('list'),
+      'search-infinite',
+      search,
+      doctorOfficeId ?? null,
+    ],
+    queryFn: ({ pageParam }) =>
+      searchPatients(search, pageParam, PATIENTS_PICKER_PAGE_SIZE, doctorOfficeId),
     initialPageParam: 1,
     // If the last page came back full, there may be more.
     getNextPageParam: (lastPage, allPages) =>

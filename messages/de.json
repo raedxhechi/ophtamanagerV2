@@ -18,10 +18,11 @@
     "logout": "Abmelden"
   },
   "nav": {
-    "viewPatients": "Patienten anzeigen",
-    "addPatient": "Neuen Patienten hinzufügen",
-    "viewOrders": "Bestellungen anzeigen",
-    "addOrder": "Neue Bestellung hinzufügen"
+    "viewPatients": "Patientenübersicht",
+    "addPatient": "Patienten hinzufügen",
+    "viewOrders": "Bestellungen",
+    "addOrder": "Neue Bestellung",
+    "viewDraftOrders": "Vorbereitung"
   },
   "language": {
     "label": "Sprache",
@@ -37,6 +38,14 @@
         "error": {
           "title": "Etwas ist schiefgelaufen",
           "description": "Die Bestellung konnte nicht erstellt werden."
+        },
+        "draftSuccess": {
+          "title": "Bestellung geparkt",
+          "description": "Der Entwurf wurde erfolgreich gespeichert."
+        },
+        "draftError": {
+          "title": "Etwas ist schiefgelaufen",
+          "description": "Der Entwurf konnte nicht gespeichert werden."
         }
       }
     },
@@ -55,7 +64,7 @@
           "placeholder": "Medikament auswählen"
         },
         "applicationDate": {
-          "label": "Anwendungsdatum",
+          "label": "OP-Datum",
           "placeholder": "Anwendungsdatum auswählen"
         },
         "patients": {
@@ -111,6 +120,37 @@
     },
     "PatientTableToolbar": {
       "searchInput": "Patienten suchen…"
+    },
+    "PatientsTable": {
+      "search": "Patienten suchen…",
+      "columns": "Spalten",
+      "addPatient": "Patient hinzufügen",
+      "noResults": "Keine Patienten gefunden.",
+      "creationDate": "Erstellt",
+      "operationDate": "OP-Datum",
+      "headers": {
+        "name": "Nachname, Vorname",
+        "date_of_birth": "Geburtstag",
+        "gender": "Geschlecht",
+        "insurance_company": "Krankenkasse",
+        "insurance_number": "Versichertennummer",
+        "city": "Stadt",
+        "street": "Straße",
+        "house_number": "Hausnummer",
+        "zipcode": "PLZ"
+      },
+      "details": {
+        "title": "Patient bearbeiten",
+        "subtitle": "Patientendetails",
+        "first_name": "Vorname",
+        "last_name": "Nachname",
+        "uuid": "UUID",
+        "directus_id": "Directus-ID",
+        "created_at": "Erstellt am",
+        "save": "Änderungen speichern",
+        "saving": "Speichern…",
+        "cancel": "Abbrechen"
+      }
     },
     "DataTablePagination1": {
       "previousPage": "Vorherige Seite",

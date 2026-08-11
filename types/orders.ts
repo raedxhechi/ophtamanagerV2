@@ -32,16 +32,6 @@ export type OrderSubOrder = SuborderRow & {
 };
 
 /**
- * An order with the relations the create/draft form reads: its medicine and
- * each suborder's patient (+ that patient's insurance company). Matches the
- * embedded shape returned by the order queries in api/browser.
- */
-export type DraftOrder = OrderRow & {
-  medicine: MedicineRow;
-  subOrders: OrderSubOrder[];
-};
-
-/**
  * A standalone suborder with the relations the suborder table columns read: its
  * patient (+ insurance company) and its parent order (+ that order's medicine).
  * Matches the embed `patient:patients(...)` + `order:orders(*, medicine(*))`.

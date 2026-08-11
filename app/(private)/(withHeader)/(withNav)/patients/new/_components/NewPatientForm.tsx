@@ -147,7 +147,11 @@ export function NewPatientForm() {
       ) : null}
 
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isPending}>
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="bg-blue-600 text-white hover:bg-blue-700"
+        >
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />

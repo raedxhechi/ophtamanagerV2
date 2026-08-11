@@ -33,7 +33,8 @@ export const SubordersTable = ({
   })
 
   return (
-    <Table>
+    <div className="w-full overflow-hidden rounded-lg border bg-background">
+      <Table>
       {/* <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
@@ -61,6 +62,7 @@ export const SubordersTable = ({
           </TableRow>
         ))}
       </TableBody>
-    </Table>
+      </Table>
+    </div>
   )
 }

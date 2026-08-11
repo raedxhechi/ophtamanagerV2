@@ -2,46 +2,33 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Columns3,
   Plus,
 } from "lucide-react";
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type SortingState,
-  type VisibilityState,
 } from "@tanstack/react-table";
 
-import type { Database } from "@/types/supabase";
+
 import { formatDate } from "@/lib/date";
+import { cn } from "@/lib/utils";
+import { useTableSettings } from "@/hooks/use-table-settings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ColumnSelector } from "@/components/table/ColumnSelector";
+import { TableSkeleton } from "@/components/table/TableSkeleton";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -50,166 +37,265 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableRowActions } from "./SubOrdersTable/RowActions";
+import {
+  SubordersTable,
+  type SubOrderForPatient,
+} from "./SubOrdersTable/SubOrdersTable";
+import { PatientDetailsDrawer } from "./PatientDetailsDrawer";
+import { Patient } from "@/types";
 
-type Patient = Database["public"]["Tables"]["patients"]["Row"];
 
 export type PatientRow = Patient & {
   insurance_company: { name: string } | null;
+  suborders: SubOrderForPatient[];
 };
 
-/** "first_name" -> "First name" for the column-visibility menu. */
-function prettify(id: string): string {
-  const s = id.replace(/_/g, " ");
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+// A few less-central columns are hidden for a user with no saved settings.
+// A module constant because useTableSettings keys its derived state off its
+// identity.
+const defaultVisibility = {
+  street: false,
+  house_number: false,
+  zipcode: false,
+};
 
 function orDash(value: string | null): React.ReactNode {
   return value ? value : <span className="text-muted-foreground">—</span>;
 }
 
-const columns: ColumnDef<PatientRow>[] = [
-  {
-    accessorKey: "first_name",
-    header: "First name",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.first_name}</span>
-    ),
-    enableHiding: false,
-  },
-  {
-    accessorKey: "last_name",
-    header: "Last name",
-    cell: ({ row }) => row.original.last_name,
-  },
-  {
-    accessorKey: "date_of_birth",
-    header: "Date of birth",
-    cell: ({ row }) => orDash(formatDate(row.original.date_of_birth) || null),
-  },
-  {
-    accessorKey: "gender",
-    header: "Gender",
-    cell: ({ row }) =>
-      row.original.gender ? (
-        <Badge variant="outline" className="capitalize">
-          {row.original.gender}
-        </Badge>
-      ) : (
-        orDash(null)
-      ),
-  },
-  {
-    id: "insurance_company",
-    accessorFn: (row) => row.insurance_company?.name ?? "",
-    header: "Insurance company",
-    cell: ({ row }) => orDash(row.original.insurance_company?.name ?? null),
-  },
-  {
-    accessorKey: "insurance_number",
-    header: "Insurance number",
-    cell: ({ row }) => orDash(row.original.insurance_number),
-  },
-  {
-    accessorKey: "city",
-    header: "City",
-    cell: ({ row }) => orDash(row.original.city),
-  },
-  {
-    accessorKey: "street",
-    header: "Street",
-    cell: ({ row }) => orDash(row.original.street),
-  },
-  {
-    accessorKey: "house_number",
-    header: "House number",
-    cell: ({ row }) => orDash(row.original.house_number),
-  },
-  {
-    accessorKey: "zipcode",
-    header: "Zipcode",
-    cell: ({ row }) => orDash(row.original.zipcode),
-  },
-];
+/** Column headers are keyed by column id under the `headers` message group. */
+type TFn = (key: string) => string;
 
-export function PatientsTable({ data }: { data: PatientRow[] }) {
+function getColumns(t: TFn): ColumnDef<PatientRow>[] {
+  return [
+    {
+      id: "name",
+      accessorFn: (row) =>
+        [row.last_name, row.first_name].filter(Boolean).join(", "),
+      header: t("headers.name"),
+      cell: ({ row }) => (
+        <span className="font-medium">
+          {[row.original.last_name, row.original.first_name]
+            .filter(Boolean)
+            .join(", ")}
+        </span>
+      ),
+      enableHiding: false,
+    },
+    {
+      accessorKey: "date_of_birth",
+      header: t("headers.date_of_birth"),
+      cell: ({ row }) => orDash(formatDate(row.original.date_of_birth) || null),
+    },
+    {
+      accessorKey: "gender",
+      header: t("headers.gender"),
+      cell: ({ row }) =>
+        row.original.gender ? (
+          <Badge variant="outline" className="capitalize">
+            {row.original.gender}
+          </Badge>
+        ) : (
+          orDash(null)
+        ),
+    },
+    {
+      id: "insurance_company",
+      accessorFn: (row) => row.insurance_company?.name ?? "",
+      header: t("headers.insurance_company"),
+      cell: ({ row }) => orDash(row.original.insurance_company?.name ?? null),
+    },
+    {
+      accessorKey: "insurance_number",
+      header: t("headers.insurance_number"),
+      cell: ({ row }) => orDash(row.original.insurance_number),
+    },
+    {
+      accessorKey: "city",
+      header: t("headers.city"),
+      cell: ({ row }) => orDash(row.original.city),
+    },
+    {
+      accessorKey: "street",
+      header: t("headers.street"),
+      cell: ({ row }) => orDash(row.original.street),
+    },
+    {
+      accessorKey: "house_number",
+      header: t("headers.house_number"),
+      cell: ({ row }) => orDash(row.original.house_number),
+    },
+    {
+      accessorKey: "zipcode",
+      header: t("headers.zipcode"),
+      cell: ({ row }) => orDash(row.original.zipcode),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => <DataTableRowActions row={row} />,
+    },
+  ];
+}
+
+export function PatientsTable({
+  data,
+  page,
+  pageCount,
+  totalCount,
+  pageSize,
+  search,
+}: {
+  data: PatientRow[];
+  /** 1-based index of the currently loaded page. */
+  page: number;
+  /** Total number of pages, derived from the office's patient count. */
+  pageCount: number;
+  /** The office's total (filtered) patient count across all pages. */
+  totalCount: number;
+  /** Rows fetched per page. */
+  pageSize: number;
+  /** The active server-side search, mirrored from the `q` search param. */
+  search: string;
+}) {
+  const t = useTranslations("component.PatientsTable");
+  const columns = React.useMemo(() => getColumns(t), [t]);
+
+  // Each page arrives from the server with its patients' suborders already
+  // embedded, so the rows are used as-is — no follow-up client fetch.
+  const rows = data;
+
+  // Page navigation and search are both server-driven via search params:
+  // `?page=#` refetches that page, `?q=` refetches the office-wide matches.
+  // Both run as transitions so `isPending` can mark the rows on screen as
+  // stale; paginating additionally remounts the page's Suspense boundary, which
+  // swaps the whole table for a skeleton.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = React.useTransition();
+  const goToPage = React.useCallback(
+    (nextPage: number) => {
+      const clamped = Math.min(Math.max(1, nextPage), pageCount);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(clamped));
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
+    },
+    [pageCount, pathname, router, searchParams]
+  );
+  const canPreviousPage = page > 1;
+  const canNextPage = page < pageCount;
+
+  // The search box is a controlled input seeded from the `q` param. Typing is
+  // debounced before it's committed to the URL, and committing a new search
+  // resets back to page 1.
+  const [searchInput, setSearchInput] = React.useState(search);
+  React.useEffect(() => setSearchInput(search), [search]);
+  React.useEffect(() => {
+    const next = searchInput.trim();
+    if (next === search) return;
+    const timeout = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next) params.set("q", next);
+      else params.delete("q");
+      params.delete("page");
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput, search, pathname, router, searchParams]);
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  // A few less-central columns are hidden by default; toggle them back on
-  // via "Columns".
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({
-      street: false,
-      house_number: false,
-      zipcode: false,
-    });
+
+  // Clicking a row (outside the actions cell) opens a drawer with the full
+  // patient record, including the fields not shown as columns.
+  const [selectedPatient, setSelectedPatient] =
+    React.useState<PatientRow | null>(null);
+
+  // The column order a user with no saved settings gets.
+  const columnIds = React.useMemo(
+    () =>
+      columns.map(
+        (column) => column.id ?? (column as { accessorKey: string }).accessorKey
+      ),
+    [columns]
+  );
+  // Which columns are shown and in what order: seeded from the user's saved
+  // settings and written back whenever they change it.
+  const {
+    state: columnSettings,
+    isReady,
+    onColumnOrderChange,
+    onColumnVisibilityChange,
+  } = useTableSettings({
+    settingsKey: "patient_table_settings",
+    columnIds,
+    defaultVisibility,
+  });
 
   const table = useReactTable({
-    data,
+    data: rows,
     columns,
-    state: { sorting, globalFilter, columnVisibility },
+    state: { sorting, ...columnSettings },
     getRowId: (row) => row.id,
-    globalFilterFn: "includesString",
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
+    onColumnOrderChange,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
   });
+
+  // Hold the table back until the saved column settings have settled, so it
+  // isn't drawn in its default shape and then rearranged.
+  if (!isReady) {
+    return (
+      <TableSkeleton
+        columnCount={table.getVisibleLeafColumns().length}
+        headerClassName="bg-blue-600"
+      />
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-4">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Input
-          placeholder="Search patients…"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="h-9 w-full max-w-xs"
+          placeholder={t("search")}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          className="h-9 w-full max-w-xs bg-white"
         />
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Columns3 />
-                <span className="hidden lg:inline">Columns</span>
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {prettify(column.id)}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button asChild size="sm">
+          <ColumnSelector
+            table={table}
+            label={(columnId) => t(`headers.${columnId}`)}
+            triggerLabel={t("columns")}
+            triggerClassName="bg-white"
+          />
+          <Button
+            asChild
+            size="sm"
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
             <Link href="/patients/new">
               <Plus />
-              <span className="hidden lg:inline">Add patient</span>
+              <span className="hidden lg:inline">{t("addPatient")}</span>
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border">
+      {/* Table — dimmed while a search is in flight, so the rows still on
+          screen read as stale without the input losing focus. */}
+      <div
+        className={cn(
+          "overflow-hidden rounded-lg border transition-opacity",
+          isPending && "pointer-events-none opacity-50"
+        )}
+        aria-busy={isPending}
+      >
         <Table>
-          <TableHeader className="bg-muted sticky top-0 z-10">
+          <TableHeader className="bg-blue-600 sticky top-0 z-10 [&_th]:text-white">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -228,13 +314,38 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                    <React.Fragment key={row.id}>
+                             <TableRow
+                               key={row.id}
+                               className="cursor-pointer"
+                               onClick={() => setSelectedPatient(row.original)}
+                             >
+                               {row.getVisibleCells().map((cell) => (
+                                 <TableCell
+                                   key={cell.id}
+                                   onClick={
+                                     cell.column.id === "actions"
+                                       ? (e) => e.stopPropagation()
+                                       : undefined
+                                   }
+                                 >
+                                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                 </TableCell>
+                               ))}
+                             </TableRow>
+                                {row.getIsExpanded() && (
+                               <TableRow
+                                 data-state={row.getIsSelected() && 'selected'}
+                                 className='bg-background hover:bg-background'
+                               >
+                                 <TableCell colSpan={columns.length} className='py-0 pr-0 bg-background'>
+                                   <div className='flex h-full my-[-0.5rem] ml-[60px]'>
+                                     <SubordersTable suborders={row.original.suborders} />
+                                   </div>
+                                 </TableCell>
+                               </TableRow>
+                             )}
+                             </React.Fragment>
               ))
             ) : (
               <TableRow>
@@ -242,7 +353,7 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No patients found.
+                  {t("noResults")}
                 </TableCell>
               </TableRow>
             )}
@@ -250,45 +361,25 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination — server-driven via the `page` search param. */}
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground hidden text-sm lg:block">
-          {table.getFilteredRowModel().rows.length} patient(s)
+          {totalCount} patient(s)
         </div>
         <div className="flex w-full items-center gap-8 lg:w-fit">
-          <div className="hidden items-center gap-2 lg:flex">
-            <Label htmlFor="rows-per-page" className="text-sm font-medium">
-              Rows per page
-            </Label>
-            <Select
-              value={`${table.getState().pagination.pageSize}`}
-              onValueChange={(value) => table.setPageSize(Number(value))}
-            >
-              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                <SelectValue
-                  placeholder={table.getState().pagination.pageSize}
-                />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="hidden items-center gap-2 lg:flex text-sm text-muted-foreground">
+            {pageSize} per page
           </div>
           <div className="flex w-fit items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount() || 1}
+            Page {page} of {pageCount}
           </div>
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <Button
               variant="outline"
               className="hidden size-8 lg:flex"
               size="icon"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => goToPage(1)}
+              disabled={!canPreviousPage}
             >
               <span className="sr-only">Go to first page</span>
               <ChevronsLeft />
@@ -297,8 +388,8 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
               variant="outline"
               className="size-8"
               size="icon"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => goToPage(page - 1)}
+              disabled={!canPreviousPage}
             >
               <span className="sr-only">Go to previous page</span>
               <ChevronLeft />
@@ -307,8 +398,8 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
               variant="outline"
               className="size-8"
               size="icon"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => goToPage(page + 1)}
+              disabled={!canNextPage}
             >
               <span className="sr-only">Go to next page</span>
               <ChevronRight />
@@ -317,8 +408,8 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
               variant="outline"
               className="hidden size-8 lg:flex"
               size="icon"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
+              onClick={() => goToPage(pageCount)}
+              disabled={!canNextPage}
             >
               <span className="sr-only">Go to last page</span>
               <ChevronsRight />
@@ -326,6 +417,14 @@ export function PatientsTable({ data }: { data: PatientRow[] }) {
           </div>
         </div>
       </div>
+
+      <PatientDetailsDrawer
+        patient={selectedPatient}
+        open={selectedPatient !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPatient(null);
+        }}
+      />
     </div>
   );
 }

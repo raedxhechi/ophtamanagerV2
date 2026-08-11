@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   IconChartBar,
   IconDashboard,
+  IconFileDescription,
   IconFolder,
   IconHelp,
   IconInnerShadowTop,
@@ -58,6 +59,11 @@ const data = {
       title: "Policies",
       url: "/admin/policies",
       icon: IconUsers,
+    },
+    {
+      title: "Logs",
+      url: "/admin/logs",
+      icon: IconFileDescription,
     },
   ],
   navClouds: [],
