@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import type { Database } from '@/types/supabase'
 import { createServerLoggingFetch } from '@/lib/logging/server'
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -7,7 +8,7 @@ export async function updateSession(request: NextRequest) {
     })
     // With Fluid compute, don't put this client in a global environment
     // variable. Always create a new one on each request.
-    const supabase = createServerClient(
+    const supabase = createServerClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
         {
@@ -74,6 +75,28 @@ export async function updateSession(request: NextRequest) {
         const redirectResponse = NextResponse.redirect(url)
         supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
         return redirectResponse
+    }
+
+    // The admin area is for the 'admin' role only. The role lives in
+    // public.user_data and is not part of the JWT, so this costs one query —
+    // kept inside the /admin branch so ordinary navigation doesn't pay for it.
+    // Anyone else (and anyone whose row is missing) lands on the patients list.
+    // `user` is guaranteed here: an unauthenticated caller was already sent to
+    // /login above, since /admin is not a public path.
+    if (user && (pathname === '/admin' || pathname.startsWith('/admin/'))) {
+        const { data: profile } = await supabase
+            .from('user_data')
+            .select('role')
+            .eq('id', user.sub)
+            .maybeSingle()
+
+        if (profile?.role !== 'admin') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/patients'
+            const redirectResponse = NextResponse.redirect(url)
+            supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
+            return redirectResponse
+        }
     }
 
     //==========================================
