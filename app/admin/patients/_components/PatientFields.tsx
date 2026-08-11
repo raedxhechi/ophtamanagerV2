@@ -130,9 +130,15 @@ export function PatientFields({
       {/* Insurance */}
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor="insurance_company_id">Insurance company</Label>
+          <Label htmlFor="insurance_company_id">
+            Insurance company <span className="text-destructive">*</span>
+          </Label>
+          {/* Required: Directus mirrors every patient and its insuranceCompany
+              column is NOT NULL, so a patient saved without one cannot be
+              copied across. See directus/mirror.ts. */}
           <Select
             name="insurance_company_id"
+            required
             defaultValue={patient?.insurance_company_id ?? undefined}
             disabled={companiesLoading}
           >

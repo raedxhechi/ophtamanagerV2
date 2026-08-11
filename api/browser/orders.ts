@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import type { OrderWithSubOrders } from '@/types'
 
 import { client } from './client'
+import { mirrorToDirectus } from './directusMirror'
 
 // Columns + relations the order views need. Mirrors the old Directus field list:
 // the order, its medicine, and each suborder with its patient (+ that patient's
@@ -145,6 +146,11 @@ export const createOrder = async (data: any) => {
     const { error: subError } = await client.from('suborders').insert(rows)
     if (subError) throw subError
   }
+
+  // Copy the finished order (with its suborders) into the legacy Directus
+  // backend. Last, so it only ever sees a committed order, and fire-and-forget,
+  // so a Directus failure leaves the Supabase order exactly as it is.
+  mirrorToDirectus('order', order.id)
 
   return order
 }
