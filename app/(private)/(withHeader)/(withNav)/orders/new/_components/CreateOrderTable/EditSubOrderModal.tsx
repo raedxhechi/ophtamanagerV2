@@ -134,10 +134,9 @@ export const EditSubOrderModal = ({
         <Button
           className='w-full align-self-end bottom-0 mt-4'
           type='submit'
-          // disabled={
-          //   (eyes?.leftEye === patient?.leftEye && eyes?.rightEye === patient?.rightEye) ||
-          //   (!eyes?.leftEye && !eyes?.rightEye)
-          // }
+          // An invoice target is required on every suborder, so the edit can't
+          // be applied while it's still unset.
+          disabled={!invoice}
           onClick={() =>
             handleApplyChanges({
               ...patient,
