@@ -133,6 +133,7 @@
         "date_of_birth": "Geburtstag",
         "gender": "Geschlecht",
         "insurance_company": "Krankenkasse",
+        "insurance_type": "Versicherungsart",
         "insurance_number": "Versichertennummer",
         "city": "Stadt",
         "street": "Straße",
