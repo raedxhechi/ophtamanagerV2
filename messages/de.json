@@ -152,6 +152,50 @@
         "cancel": "Abbrechen"
       }
     },
+    "NewPatientForm": {
+      "title": "Neuer Patient",
+      "subtitle": "Fügen Sie Ihrer Praxis einen neuen Patienten hinzu.",
+      "fields": {
+        "first_name": "Vorname",
+        "last_name": "Nachname",
+        "date_of_birth": "Geburtsdatum",
+        "gender": {
+          "label": "Geschlecht",
+          "placeholder": "Geschlecht auswählen",
+          "male": "Männlich",
+          "female": "Weiblich",
+          "other": "Divers"
+        },
+        "insurance_type": {
+          "label": "Versicherungsart",
+          "placeholder": "Versicherungsart auswählen",
+          "Gesetzlich": "Gesetzlich",
+          "Privat": "Privat"
+        },
+        "insurance_company": {
+          "label": "Krankenkasse",
+          "placeholder": "Krankenkasse auswählen",
+          "placeholderNoType": "Zuerst Versicherungsart auswählen",
+          "placeholderError": "Krankenkassen konnten nicht geladen werden",
+          "empty": "Keine Krankenkassen für diese Versicherungsart"
+        },
+        "insurance_number": "Versichertennummer",
+        "street": "Straße",
+        "house_number": "Hausnummer",
+        "zipcode": "PLZ",
+        "city": "Stadt"
+      },
+      "loading": "Laden…",
+      "submit": "Patient anlegen",
+      "submitting": "Speichern…",
+      "cancel": "Abbrechen",
+      "errors": {
+        "noOffice": "Sie sind keiner Arztpraxis zugeordnet.",
+        "requiredFields": "Vorname, Nachname und Geburtsdatum sind erforderlich.",
+        "invalidDateOfBirth": "Ungültiges Geburtsdatum.",
+        "insuranceCompanyRequired": "Eine Krankenkasse ist erforderlich."
+      }
+    },
     "DataTablePagination1": {
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite"

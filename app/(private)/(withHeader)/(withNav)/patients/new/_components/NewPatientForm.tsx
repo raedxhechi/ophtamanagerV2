@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 
 import { client } from "@/api/browser/client";
@@ -17,10 +18,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import type { InsuranceType } from "@/types";
+
 import { createPatient } from "../actions";
 
+const INSURANCE_TYPES: InsuranceType[] = ["Gesetzlich", "Privat"];
+
 export function NewPatientForm() {
+  const t = useTranslations("component.NewPatientForm");
   const [state, formAction, isPending] = useActionState(createPatient, null);
+
+  // Filters the company list below; not part of the submitted patient.
+  const [insuranceType, setInsuranceType] = useState<InsuranceType | "">("");
+  const [companyId, setCompanyId] = useState("");
 
   // Fetched on the client, after the page is already displayed.
   const {
@@ -39,41 +49,49 @@ export function NewPatientForm() {
     },
   });
 
+  const filteredCompanies =
+    insuranceType === ""
+      ? []
+      : (companies ?? []).filter(
+          (company) => company.insurance_type === insuranceType
+        );
+
   return (
     <form action={formAction} className="space-y-8">
       {/* Personal details */}
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="first_name">
-            First name <span className="text-destructive">*</span>
+            {t("fields.first_name")} <span className="text-destructive">*</span>
           </Label>
           <Input id="first_name" name="first_name" required />
         </div>
 
         <div className="grid gap-2">
           <Label htmlFor="last_name">
-            Last name <span className="text-destructive">*</span>
+            {t("fields.last_name")} <span className="text-destructive">*</span>
           </Label>
           <Input id="last_name" name="last_name" required />
         </div>
 
         <div className="grid gap-2">
           <Label htmlFor="date_of_birth">
-            Date of birth <span className="text-destructive">*</span>
+            {t("fields.date_of_birth")}{" "}
+            <span className="text-destructive">*</span>
           </Label>
           <Input id="date_of_birth" name="date_of_birth" type="date" required />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="gender">Gender</Label>
+          <Label htmlFor="gender">{t("fields.gender.label")}</Label>
           <Select name="gender">
             <SelectTrigger id="gender" className="w-full">
-              <SelectValue placeholder="Select gender" />
+              <SelectValue placeholder={t("fields.gender.placeholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="male">{t("fields.gender.male")}</SelectItem>
+              <SelectItem value="female">{t("fields.gender.female")}</SelectItem>
+              <SelectItem value="other">{t("fields.gender.other")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -82,36 +100,27 @@ export function NewPatientForm() {
       {/* Insurance */}
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="insurance_company_id">
-              Insurance company <span className="text-destructive">*</span>
-            </Label>
-            {companiesLoading ? (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" />
-                Loading…
-              </span>
-            ) : null}
-          </div>
-          {/* Required: Directus mirrors every patient and its insuranceCompany
-              column is NOT NULL, so a patient saved without one cannot be
-              copied across. See directus/mirror.ts. */}
-          <Select name="insurance_company_id" required disabled={companiesLoading}>
-            <SelectTrigger id="insurance_company_id" className="w-full">
-              <SelectValue
-                placeholder={
-                  companiesError
-                    ? "Failed to load companies"
-                    : companiesLoading
-                      ? "Loading…"
-                      : "Select insurance company"
-                }
-              />
+          <Label htmlFor="insurance_type">
+            {t("fields.insurance_type.label")}{" "}
+            <span className="text-destructive">*</span>
+          </Label>
+          <Select
+            value={insuranceType}
+            onValueChange={(value) => {
+              setInsuranceType(value as InsuranceType);
+              // The previously picked company may belong to the other type.
+              setCompanyId("");
+            }}
+          >
+            <SelectTrigger id="insurance_type" className="w-full">
+              <SelectValue placeholder={t("fields.insurance_type.placeholder")} />
             </SelectTrigger>
             <SelectContent>
-              {companies?.map((company) => (
-                <SelectItem key={company.id} value={company.id}>
-                  {company.name}
+              {INSURANCE_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {/* The value stays the Postgres enum; only the label is
+                      translated. */}
+                  {t(`fields.insurance_type.${type}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -119,7 +128,61 @@ export function NewPatientForm() {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="insurance_number">Insurance number</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="insurance_company_id">
+              {t("fields.insurance_company.label")}{" "}
+              <span className="text-destructive">*</span>
+            </Label>
+            {companiesLoading ? (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" />
+                {t("loading")}
+              </span>
+            ) : null}
+          </div>
+          {/* Required: Directus mirrors every patient and its insuranceCompany
+              column is NOT NULL, so a patient saved without one cannot be
+              copied across. See directus/mirror.ts. */}
+          <Select
+            name="insurance_company_id"
+            required
+            value={companyId}
+            onValueChange={setCompanyId}
+            disabled={companiesLoading || insuranceType === ""}
+          >
+            <SelectTrigger id="insurance_company_id" className="w-full">
+              <SelectValue
+                placeholder={
+                  companiesError
+                    ? t("fields.insurance_company.placeholderError")
+                    : companiesLoading
+                      ? t("loading")
+                      : insuranceType === ""
+                        ? t("fields.insurance_company.placeholderNoType")
+                        : t("fields.insurance_company.placeholder")
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredCompanies.length === 0 ? (
+                <p className="px-2 py-1.5 text-sm text-muted-foreground">
+                  {t("fields.insurance_company.empty")}
+                </p>
+              ) : (
+                filteredCompanies.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="insurance_number">
+            {t("fields.insurance_number")}
+          </Label>
           <Input id="insurance_number" name="insurance_number" />
         </div>
       </section>
@@ -127,22 +190,22 @@ export function NewPatientForm() {
       {/* Address */}
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor="street">Street</Label>
+          <Label htmlFor="street">{t("fields.street")}</Label>
           <Input id="street" name="street" />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="house_number">House number</Label>
+          <Label htmlFor="house_number">{t("fields.house_number")}</Label>
           <Input id="house_number" name="house_number" />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="zipcode">Zipcode</Label>
+          <Label htmlFor="zipcode">{t("fields.zipcode")}</Label>
           <Input id="zipcode" name="zipcode" />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="city">City</Label>
+          <Label htmlFor="city">{t("fields.city")}</Label>
           <Input id="city" name="city" />
         </div>
       </section>
@@ -160,14 +223,14 @@ export function NewPatientForm() {
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Saving…
+              {t("submitting")}
             </>
           ) : (
-            "Create patient"
+            t("submit")
           )}
         </Button>
         <Button asChild variant="ghost" type="button">
-          <Link href="/patients">Cancel</Link>
+          <Link href="/patients">{t("cancel")}</Link>
         </Button>
       </div>
     </form>
