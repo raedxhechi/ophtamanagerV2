@@ -12,10 +12,18 @@ import { mirrorToDirectus } from './directusMirror'
 // insurance company). The suborder's patient is aliased to the singular `patient`
 // key the OrderWithSubOrders type reads. Note: Supabase orders have no
 // `user_created` relation.
+//
+// `doctor_office` is the office that placed the order, which the receipt PDF
+// prints as the sender address. It's taken from the order rather than from the
+// signed-in user so an admin viewing another office's order still gets the right
+// address on the receipt. The office's pharmacy comes along with it — the
+// receipt prints it as the recipient — aliased to the singular `pharmacy` key,
+// since it's a to-one relation.
 const ORDER_SELECT = `
   *,
   medicine (*),
   created_by:user_data (*),
+  doctor_office (*, pharmacy:pharmacies (*)),
   suborders (
     *,
     patient:patients (

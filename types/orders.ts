@@ -7,6 +7,8 @@ type MedicineRow = Database["public"]["Tables"]["medicine"]["Row"];
 type InsuranceCompanyRow =
   Database["public"]["Tables"]["insurance_companies"]["Row"];
 type UserDataRow = Database["public"]["Tables"]["user_data"]["Row"];
+type DoctorOfficeRow = Database["public"]["Tables"]["doctor_office"]["Row"];
+type PharmacyRow = Database["public"]["Tables"]["pharmacies"]["Row"];
 // The email/first_name/last_name columns were added by migration; the generated
 // types/supabase.ts may lag behind until `npm run typegen` is re-run, so they're
 // spelled out here to keep the creator embed typed. The intersection is a no-op
@@ -20,6 +22,16 @@ type CreatedByUser = UserDataRow & {
 /** A patient with its insurance company, as embedded in order/suborder queries. */
 type PatientWithInsurance = PatientRow & {
   insurance_companies: InsuranceCompanyRow | null;
+};
+
+/**
+ * An office with the pharmacy that serves it, as embedded in ORDER_SELECT via
+ * `doctor_office (*, pharmacy:pharmacies (*))`. `pharmacy` is a to-one relation
+ * (doctor_office.pharmacy_id), and is null for an office with no pharmacy
+ * assigned yet — the column is nullable.
+ */
+type OfficeWithPharmacy = DoctorOfficeRow & {
+  pharmacy: PharmacyRow | null;
 };
 
 /**
@@ -55,6 +67,11 @@ export type OrderWithSubOrders = Omit<OrderRow, "created_by"> & {
   // The `created_by` scalar (a user id) is replaced by the embedded creator's
   // user_data row via `created_by:user_data(*)` in ORDER_SELECT.
   created_by: CreatedByUser | null;
+  // The office that placed the order (with its pharmacy), which the receipt PDF
+  // prints as the sender and recipient addresses. This is an added key, not a
+  // replacement — the `doctor_office_id` scalar is still returned alongside it.
+  // Null when RLS hides the office row from the reader.
+  doctor_office: OfficeWithPharmacy | null;
   suborders: OrderSubOrder[];
 };
 

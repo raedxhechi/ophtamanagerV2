@@ -42,11 +42,13 @@ export type Database = {
       doctor_office: {
         Row: {
           city: string | null
+          contact_person: string | null
           created_at: string
           email: string | null
           house_number: string | null
           id: string
           name: string
+          pharmacy_id: string | null
           phone_number: string | null
           street: string | null
           updated_at: string
@@ -54,11 +56,13 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          contact_person?: string | null
           created_at?: string
           email?: string | null
           house_number?: string | null
           id?: string
           name: string
+          pharmacy_id?: string | null
           phone_number?: string | null
           street?: string | null
           updated_at?: string
@@ -66,17 +70,27 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          contact_person?: string | null
           created_at?: string
           email?: string | null
           house_number?: string | null
           id?: string
           name?: string
+          pharmacy_id?: string | null
           phone_number?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "doctor_office_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       draft_orders: {
         Row: {
@@ -472,6 +486,42 @@ export type Database = {
           },
         ]
       }
+      pharmacies: {
+        Row: {
+          city: string | null
+          created_at: string
+          house_number: string | null
+          id: string
+          name: string
+          phone_number: string | null
+          street: string | null
+          updated_at: string
+          zipcode: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          house_number?: string | null
+          id?: string
+          name: string
+          phone_number?: string | null
+          street?: string | null
+          updated_at?: string
+          zipcode?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          house_number?: string | null
+          id?: string
+          name?: string
+          phone_number?: string | null
+          street?: string | null
+          updated_at?: string
+          zipcode?: string | null
+        }
+        Relationships: []
+      }
       suborders: {
         Row: {
           created_at: string
@@ -657,39 +707,6 @@ export type Database = {
           },
         ]
       }
-      user_office_access: {
-        Row: {
-          created_at: string
-          doctor_office_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          doctor_office_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          doctor_office_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_office_access_doctor_office_id_fkey"
-            columns: ["doctor_office_id"]
-            isOneToOne: false
-            referencedRelation: "doctor_office"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_office_access_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_settings: {
         Row: {
           admin_orders_settings: Json | null
@@ -734,9 +751,8 @@ export type Database = {
     }
     Functions: {
       current_office_id: { Args: never; Returns: string }
-      current_office_ids: { Args: never; Returns: string[] }
+      current_pharmacy_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
-      is_manager: { Args: never; Returns: boolean }
       orders_build_search_text: {
         Args: { o: Database["public"]["Tables"]["orders"]["Row"] }
         Returns: string
@@ -746,7 +762,6 @@ export type Database = {
         Returns: string
       }
       prune_system_logs: { Args: { p_retain?: string }; Returns: number }
-      set_active_office: { Args: { p_office: string }; Returns: undefined }
       suborders_build_search_text: {
         Args: { s: Database["public"]["Tables"]["suborders"]["Row"] }
         Returns: string
@@ -767,7 +782,7 @@ export type Database = {
       insurance_type: "Privat" | "Gesetzlich"
       invoice_types: "Praxis" | "Kasse" | "Patient"
       medicine_type: "Rezeptur" | "Fertigarzneimittel"
-      user_role: "admin" | "doctor" | "manager" | "assistant" | "pharmacist"
+      user_role: "admin" | "doctor" | "assistant" | "pharmacist"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -902,7 +917,7 @@ export const Constants = {
       insurance_type: ["Privat", "Gesetzlich"],
       invoice_types: ["Praxis", "Kasse", "Patient"],
       medicine_type: ["Rezeptur", "Fertigarzneimittel"],
-      user_role: ["admin", "doctor", "manager", "assistant", "pharmacist"],
+      user_role: ["admin", "doctor", "assistant", "pharmacist"],
     },
   },
 } as const
