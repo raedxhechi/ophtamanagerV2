@@ -5,6 +5,7 @@
     "pharmacy": "Pharmacy",
     "pharmacyDetails": "Pharmacy details",
     "noOffice": "No office",
+    "policyImage": "Insurance policy",
     "fields": {
       "name": "Name",
       "email": "Email",

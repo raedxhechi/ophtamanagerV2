@@ -5,6 +5,9 @@ import { getTranslations } from "next-intl/server";
 import type { DetailRow } from "./EntitySheet";
 import type { UserDataWithOffice } from "@/types/user";
 
+import { getPolicyImageUrl } from "@/lib/policyImage";
+import { createClient } from "@/supabase/server";
+
 import { EntitySheet } from "./EntitySheet";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
@@ -32,6 +35,13 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
     { label: t("fields.phone"), value: office?.phone_number ?? "—" },
   ];
 
+  // The insurance policy image, uploaded by an admin under /admin/policies.
+  // One image covers every office today, so no office id is passed; handing it
+  // `office?.id` is all that's needed once each office has its own (the
+  // resolver prefers the office's and falls back to the shared one).
+  const supabase = await createClient();
+  const policyImageUrl = await getPolicyImageUrl(supabase);
+
   const pharmacyRows: DetailRow[] = [
     { label: t("fields.name"), value: pharmacy.name },
     { label: t("fields.email"), value: pharmacy.email },
@@ -44,16 +54,21 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
         {/* 1. Logo area */}
         <Logo />
 
-        {/* 2. Doctor office — opens a details sidebar */}
+        {/* 2. Doctor office — info button opens a details sidebar */}
         <EntitySheet
           name={office?.name ?? t("noOffice")}
           icon={<Building2 className="size-4" />}
           title={t("doctorOffice")}
           description={t("doctorOfficeDetails")}
           rows={doctorOfficeRows}
+          image={
+            policyImageUrl
+              ? { url: policyImageUrl, label: t("policyImage") }
+              : null
+          }
         />
 
-        {/* 3. Pharmacy — opens a details sidebar */}
+        {/* 3. Pharmacy — info button opens a details sidebar */}
         <EntitySheet
           name={pharmacy.name}
           icon={<Pill className="size-4" />}

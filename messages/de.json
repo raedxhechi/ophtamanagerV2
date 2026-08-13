@@ -5,6 +5,7 @@
     "pharmacy": "Apotheke",
     "pharmacyDetails": "Apothekendaten",
     "noOffice": "Keine Praxis",
+    "policyImage": "Versicherungsinformationen",
     "fields": {
       "name": "Name",
       "email": "E-Mail",
