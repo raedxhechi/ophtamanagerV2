@@ -657,6 +657,39 @@ export type Database = {
           },
         ]
       }
+      user_office_access: {
+        Row: {
+          created_at: string
+          doctor_office_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_office_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doctor_office_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_office_access_doctor_office_id_fkey"
+            columns: ["doctor_office_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_office"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_office_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           admin_orders_settings: Json | null
@@ -701,7 +734,9 @@ export type Database = {
     }
     Functions: {
       current_office_id: { Args: never; Returns: string }
+      current_office_ids: { Args: never; Returns: string[] }
       is_admin: { Args: never; Returns: boolean }
+      is_manager: { Args: never; Returns: boolean }
       orders_build_search_text: {
         Args: { o: Database["public"]["Tables"]["orders"]["Row"] }
         Returns: string
@@ -711,6 +746,7 @@ export type Database = {
         Returns: string
       }
       prune_system_logs: { Args: { p_retain?: string }; Returns: number }
+      set_active_office: { Args: { p_office: string }; Returns: undefined }
       suborders_build_search_text: {
         Args: { s: Database["public"]["Tables"]["suborders"]["Row"] }
         Returns: string
@@ -731,7 +767,7 @@ export type Database = {
       insurance_type: "Privat" | "Gesetzlich"
       invoice_types: "Praxis" | "Kasse" | "Patient"
       medicine_type: "Rezeptur" | "Fertigarzneimittel"
-      user_role: "admin" | "doctor" | "assistant" | "pharmacist"
+      user_role: "admin" | "doctor" | "manager" | "assistant" | "pharmacist"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -866,7 +902,7 @@ export const Constants = {
       insurance_type: ["Privat", "Gesetzlich"],
       invoice_types: ["Praxis", "Kasse", "Patient"],
       medicine_type: ["Rezeptur", "Fertigarzneimittel"],
-      user_role: ["admin", "doctor", "assistant", "pharmacist"],
+      user_role: ["admin", "doctor", "manager", "assistant", "pharmacist"],
     },
   },
 } as const
