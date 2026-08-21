@@ -147,19 +147,24 @@ export const useAvailableSubOrdersColumns = () => {
       accessorKey: '-',
 
       cell: ({ row }) => {
+        // A patient can only be added once the row says what to order and how to
+        // bill it: at least one eye, and an invoice target.
+        const canAdd =
+          !row.original.disabled &&
+          !!row.original.invoice &&
+          (row.original.rightEye || row.original.leftEye)
+
         return (
           <div className='flex space-x-2'>
             {row?.original?.selectPatient ? (
               <Badge
                 onClick={() => {
-                  if (!row.original.disabled && (row.original.rightEye || row.original.leftEye)) {
+                  if (canAdd) {
                     row?.original?.selectPatient?.(row.original.patientId)
                   }
                 }}
-                className={`cursor-pointer p-2 ${
-                  row.original.disabled
-                    ? 'cursor-not-allowed bg-[#CCCCCC] hover:bg-[#cccccc]'
-                    : 'cursor-pointer'
+                className={`p-2 ${
+                  canAdd ? 'cursor-pointer' : 'cursor-not-allowed bg-[#CCCCCC] hover:bg-[#cccccc]'
                 }`}
               >
                 <Plus size={16} />

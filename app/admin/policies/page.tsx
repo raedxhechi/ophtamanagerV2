@@ -5,6 +5,7 @@ import { createClient } from "@/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { OfficeSelect } from "./_components/OfficeSelect";
+import { PolicyImageDrawer } from "./_components/PolicyImageDrawer";
 
 type RawCard = {
   id: string;
@@ -45,14 +46,19 @@ export default async function PoliciesPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Insurance policies
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Pick a doctor office, then open a policy to see its medicines and
-          insurance companies.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Insurance policies
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pick a doctor office, then open a policy to see its medicines and
+            insurance companies.
+          </p>
+        </div>
+
+        {/* Not scoped to the office picked below — one image serves them all. */}
+        <PolicyImageDrawer />
       </div>
 
       <OfficeSelect offices={offices} selectedOfficeId={office ?? null} />

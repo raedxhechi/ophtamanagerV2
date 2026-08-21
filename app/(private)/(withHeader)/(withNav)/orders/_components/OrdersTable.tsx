@@ -19,7 +19,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,7 @@ const columns: ColumnDef<OrderRow>[] = [
   {
     accessorKey: "created_at",
     header: "Created",
-    cell: ({ row }) => orDash(formatDate(row.original.created_at) || null),
+    cell: ({ row }) => orDash(formatDateTime(row.original.created_at) || null),
   },
      {
       id: 'actions',

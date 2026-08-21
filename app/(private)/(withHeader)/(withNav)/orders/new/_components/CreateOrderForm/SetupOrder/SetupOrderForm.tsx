@@ -218,6 +218,9 @@ export const SetupOrder = ({
               className='w-full'
               disabled={
                 !form.watch('subOrders').length ||
+                // A draft parked before an invoice target was picked comes back
+                // with rows the add-button gate never saw; catch them here.
+                form.watch('subOrders').some((subOrder) => !subOrder.invoice) ||
                 !form.watch('deliveryDate') ||
                 !form.watch('typeOfMedicine') ||
                 !form.watch('medicine') ||

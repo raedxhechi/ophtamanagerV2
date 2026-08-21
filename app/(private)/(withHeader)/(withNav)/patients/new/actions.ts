@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { mirrorPatientToDirectus } from "@/directus/mirror";
 import { createClient } from "@/supabase/server";
@@ -23,6 +24,9 @@ export async function createPatient(
   formData: FormData
 ): Promise<CreatePatientState> {
   const supabase = await createClient();
+  // The locale comes from the cookie read in i18n/request.ts, so the errors
+  // below come back in the same language the form is rendered in.
+  const t = await getTranslations("component.NewPatientForm.errors");
 
   const {
     data: { user },
@@ -40,7 +44,7 @@ export async function createPatient(
 
   const officeId = profile?.doctor_office_id;
   if (!officeId) {
-    return { error: "You are not assigned to a doctor office." };
+    return { error: t("noOffice") };
   }
 
   const first_name = field(formData, "first_name");
@@ -48,20 +52,18 @@ export async function createPatient(
   const date_of_birth = field(formData, "date_of_birth");
 
   if (!first_name || !last_name || !date_of_birth) {
-    return {
-      error: "First name, last name and date of birth are required.",
-    };
+    return { error: t("requiredFields") };
   }
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date_of_birth)) {
-    return { error: "Invalid date of birth." };
+    return { error: t("invalidDateOfBirth") };
   }
 
   // Required so the patient can be mirrored into Directus, where
   // insuranceCompany is NOT NULL. The form marks it required too; this is the
   // half that a submission bypassing the browser cannot skip.
   if (!field(formData, "insurance_company_id")) {
-    return { error: "An insurance company is required." };
+    return { error: t("insuranceCompanyRequired") };
   }
 
   const { data: patient, error } = await supabase

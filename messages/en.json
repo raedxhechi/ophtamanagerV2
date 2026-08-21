@@ -5,6 +5,7 @@
     "pharmacy": "Pharmacy",
     "pharmacyDetails": "Pharmacy details",
     "noOffice": "No office",
+    "policyImage": "Insurance policy",
     "fields": {
       "name": "Name",
       "email": "Email",
@@ -133,6 +134,7 @@
         "date_of_birth": "Date of birth",
         "gender": "Gender",
         "insurance_company": "Insurance company",
+        "insurance_type": "Insurance type",
         "insurance_number": "Insurance number",
         "city": "City",
         "street": "Street",
@@ -150,6 +152,50 @@
         "save": "Save changes",
         "saving": "Saving…",
         "cancel": "Cancel"
+      }
+    },
+    "NewPatientForm": {
+      "title": "New patient",
+      "subtitle": "Add a new patient to your doctor office.",
+      "fields": {
+        "first_name": "First name",
+        "last_name": "Last name",
+        "date_of_birth": "Date of birth",
+        "gender": {
+          "label": "Gender",
+          "placeholder": "Select gender",
+          "male": "Male",
+          "female": "Female",
+          "other": "Other"
+        },
+        "insurance_type": {
+          "label": "Insurance type",
+          "placeholder": "Select insurance type",
+          "Gesetzlich": "Statutory",
+          "Privat": "Private"
+        },
+        "insurance_company": {
+          "label": "Insurance company",
+          "placeholder": "Select insurance company",
+          "placeholderNoType": "Select an insurance type first",
+          "placeholderError": "Failed to load companies",
+          "empty": "No companies for this type"
+        },
+        "insurance_number": "Insurance number",
+        "street": "Street",
+        "house_number": "House number",
+        "zipcode": "Zipcode",
+        "city": "City"
+      },
+      "loading": "Loading…",
+      "submit": "Create patient",
+      "submitting": "Saving…",
+      "cancel": "Cancel",
+      "errors": {
+        "noOffice": "You are not assigned to a doctor office.",
+        "requiredFields": "First name, last name and date of birth are required.",
+        "invalidDateOfBirth": "Invalid date of birth.",
+        "insuranceCompanyRequired": "An insurance company is required."
       }
     },
     "DataTablePagination1": {

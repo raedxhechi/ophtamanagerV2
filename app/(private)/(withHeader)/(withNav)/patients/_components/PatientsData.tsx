@@ -11,7 +11,7 @@ const PAGE_SIZE = 100;
 // total patient count.
 const PATIENTS_SELECT = `
   *,
-  insurance_company:insurance_company_id(name),
+  insurance_company:insurance_company_id(name, insurance_type),
   suborders (
     id,
     left_eye,

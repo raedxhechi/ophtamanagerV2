@@ -43,12 +43,19 @@ import {
   type SubOrderForPatient,
 } from "./SubOrdersTable/SubOrdersTable";
 import { PatientDetailsDrawer } from "./PatientDetailsDrawer";
-import { Patient } from "@/types";
+import { Patient, type InsuranceType } from "@/types";
 
 
 export type PatientRow = Patient & {
-  insurance_company: { name: string } | null;
+  insurance_company: { name: string; insurance_type: InsuranceType } | null;
   suborders: SubOrderForPatient[];
+};
+
+// The abbreviations the practice uses for the two German insurance systems.
+// Not translated — GKV/PKV are the same in every locale.
+const INSURANCE_TYPE_LABELS: Record<InsuranceType, string> = {
+  Gesetzlich: "GKV",
+  Privat: "PKV",
 };
 
 // A few less-central columns are hidden for a user with no saved settings.
@@ -105,6 +112,21 @@ function getColumns(t: TFn): ColumnDef<PatientRow>[] {
       accessorFn: (row) => row.insurance_company?.name ?? "",
       header: t("headers.insurance_company"),
       cell: ({ row }) => orDash(row.original.insurance_company?.name ?? null),
+    },
+    {
+      id: "insurance_type",
+      // Derived from the patient's insurance company, not stored on the
+      // patient — sorting therefore groups by GKV/PKV, not by company.
+      accessorFn: (row) => row.insurance_company?.insurance_type ?? "",
+      header: t("headers.insurance_type"),
+      cell: ({ row }) => {
+        const type = row.original.insurance_company?.insurance_type;
+        return type ? (
+          <Badge variant="outline">{INSURANCE_TYPE_LABELS[type]}</Badge>
+        ) : (
+          orDash(null)
+        );
+      },
     },
     {
       accessorKey: "insurance_number",

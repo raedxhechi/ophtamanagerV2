@@ -38,6 +38,12 @@ const styles = StyleSheet.create({
     fontWeight: 500,
     lineHeight: 1.4,
   },
+  // The right-hand cell already ends at the right margin; aligning its text
+  // there too sets the pharmacy block flush against the page edge instead of
+  // starting it at the horizontal midpoint.
+  headerCellRight: {
+    textAlign: 'right',
+  },
 
   titleRow: {
     flexDirection: 'row',
@@ -102,25 +108,15 @@ const invoiceLine = (invoice: string | null | undefined) => {
   return `(${mark('Praxis')}) Praxis (${mark('Patient')}) Patient (${mark('Kasse')}) Kasse`
 }
 
-export const OrderReceipt = ({
-  order,
-  user,
-}: {
-  order: OrderWithSubOrders
-  // The user/office store is typed `any`; office + pharmacy fields are read
-  // defensively and render blank until that store is populated.
-  user?: any
-}) => {
-  const office = user?.doctorOffice
+export const OrderReceipt = ({ order }: { order: OrderWithSubOrders }) => {
+  // The office that placed the order, embedded by ORDER_SELECT. Taken from the
+  // order rather than the signed-in user so an admin printing another office's
+  // receipt gets that office's address.
+  const office = order.doctor_office
+  // The pharmacy serving that office — the receipt's recipient. Null until an
+  // office is assigned one (doctor_office.pharmacy_id is nullable), in which
+  // case the cell renders blank rather than breaking the header grid.
   const pharmacy = office?.pharmacy
-
-  // The user who created the order (embedded via created_by:user_data(*)).
-  const creator = order.created_by
-  const creatorName = [creator?.first_name, creator?.last_name]
-    .filter(Boolean)
-    .join(' ')
-
-    console.log(creatorName)
 
   const total = order.suborders.reduce(
     (sum, sub) => sum + (sub.left_eye ? 1 : 0) + (sub.right_eye ? 1 : 0),
@@ -134,32 +130,26 @@ export const OrderReceipt = ({
         <View style={styles.headerGrid}>
           <View style={styles.headerCell}>
             <Text>{office?.name}</Text>
-            <Text>{office?.street}</Text>
-            <Text>
-              {[office?.houseNumber, [office?.zipCode, office?.city].filter(Boolean).join(' ')]
-                .filter(Boolean)
-                .join(', ')}
-            </Text>
+            <Text>{[office?.street, office?.house_number].filter(Boolean).join(' ')}</Text>
+            <Text>{[office?.zipcode, office?.city].filter(Boolean).join(' ')}</Text>
           </View>
 
           <View style={styles.headerCell}>
             <Text>{pharmacy?.name}</Text>
-            <Text>
-              {[pharmacy?.street, pharmacy?.houseNumber].filter(Boolean).join(' ')}
-            </Text>
-            <Text>{[pharmacy?.zipCode, pharmacy?.city].filter(Boolean).join(' ')}</Text>
+            <Text>{[pharmacy?.street, pharmacy?.house_number].filter(Boolean).join(' ')}</Text>
+            <Text>{[pharmacy?.zipcode, pharmacy?.city].filter(Boolean).join(' ')}</Text>
           </View>
 
           <View style={styles.headerCell}>
-            <Text>Ansprechpartner: {creatorName}</Text>
+            <Text>Ansprechpartner: {office?.contact_person}</Text>
             <Text>Lieferdatum: {formatDateFromString(order.delivery_date)}</Text>
             <Text>OP-Datum: {formatDateFromString(order.application_date)}</Text>
           </View>
 
-          <View style={styles.headerCell}>
-            <Text>{pharmacy?.pharmacy_contact_name}</Text>
-            <Text>{pharmacy?.pharmacy_contact_email}</Text>
-          </View>
+          {/* <View style={styles.headerCell}>
+            <Text>{office?.phone_number}</Text>
+            <Text>{office?.email}</Text>
+          </View> */}
         </View>
 
         {/* Title: medicine + creation date */}
