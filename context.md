@@ -137,6 +137,16 @@ record of what those accounts may do.
   office and needs none of their own; for everyone else the office *is* their
   access, so it is required. An admin cannot drop their own admin role — that
   would close the screen behind them.
+- **Deleting** a user runs `public.delete_app_user()` (one transaction, admin
+  check inside) and then `auth.admin.deleteUser()`. Every FK into `user_data` is
+  ON DELETE RESTRICT, so the function decides what happens to each: table
+  preferences and office grants describe nobody else and go with the user, while
+  orders, draft orders and audit rows stay and lose their link — they are the
+  practice's record, not the user's property. `system_logs` keeps `user_email`
+  and `user_role` on the row, so an unlinked audit entry still says who acted.
+  The auth account can only go after the profile has (that FK again), which is
+  the one non-atomic step: if it fails, the account is left showing as
+  "No profile" and running the delete again finishes it.
 - Filtering is client-side here, unlike patients and orders: this table holds
   every account in the app (a few dozen), not a page out of thousands. The role
   select is driven by `Constants.public.Enums.user_role` in `types/supabase.ts`,

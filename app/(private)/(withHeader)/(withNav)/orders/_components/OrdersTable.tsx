@@ -38,6 +38,7 @@ import { SubordersTable } from "./SubOrdersTable.tsx/SubOrdersTable";
 
 import type { OrderWithSubOrders } from "@/types";
 import { DataTableRowActions } from "./RowActions";
+import { useEffect } from "react";
 
 // The order rows this table renders: an order with its medicine and its
 // suborders (each carrying its patient). See OrderWithSubOrders in types/orders.
@@ -120,6 +121,10 @@ export function OrdersTable({
   search: string;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+
+    useEffect(() => {
+  console.log({data})
+  }, [data]);
 
   // Page navigation and search are both server-driven via search params:
   // `?page=#` refetches that page, `?q=` refetches the office-wide matches.

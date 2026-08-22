@@ -786,6 +786,7 @@ export type Database = {
       current_office_id: { Args: never; Returns: string }
       current_office_ids: { Args: never; Returns: string[] }
       current_pharmacy_id: { Args: never; Returns: string }
+      delete_app_user: { Args: { p_user: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_manager: { Args: never; Returns: boolean }
       orders_build_search_text: {

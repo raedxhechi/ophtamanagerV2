@@ -46,6 +46,10 @@ export type AdminUserRow = {
 export async function AdminUsersData() {
   const supabase = await createClient();
 
+  const {
+    data: { user: viewer },
+  } = await supabase.auth.getUser();
+
   // RLS would already narrow user_data to the admin's own row rather than
   // erroring, which reads as "there is one user". Ask plainly instead.
   const { data: isAdmin } = await supabase.rpc("is_admin");
@@ -112,5 +116,11 @@ export async function AdminUsersData() {
   // Newest first, so someone invited a minute ago is at the top.
   rows.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 
-  return <AdminUsersTable data={rows} offices={offices} />;
+  return (
+    <AdminUsersTable
+      data={rows}
+      offices={offices}
+      currentUserId={viewer?.id ?? null}
+    />
+  );
 }
