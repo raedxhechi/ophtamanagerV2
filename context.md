@@ -87,6 +87,14 @@ created by an admin on **`/admin/users`** (or from the Supabase dashboard —
   link points at localhost. All three share one card layout — table-based with
   inline styles, German first and English under a rule, and a plain-text copy of
   the link for clients that swallow the button.
+- **Every emailed link is valid for 72 hours** (`otp_expiry = 259200` under
+  `[auth.email]`). GoTrue has a single expiry for all of them, so invitations,
+  password resets and magic links share it — the invite is what needs the room
+  (it goes to someone who isn't waiting for it), and the default hour killed
+  most of them before they were opened. The links are single-use and verified
+  server-side, but a reset link does stay live for three days, and the Security
+  Advisor flags the value. Only a `supabase config push` can set it: the
+  dashboard's own field caps at 86400 and would quietly halve it.
 - Mail goes out through **Resend** (`[auth.email.smtp]`), from
   noreply@ophtamanager.de. The API key is never in the repo: `env(RESEND_API_KEY)`
   is substituted by the CLI at `supabase config push` time. Supabase's built-in

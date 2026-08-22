@@ -265,7 +265,24 @@ max_frequency = "1s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
-otp_expiry = 3600
+#
+# 72 hours. An invitation goes to someone who is not sitting at the app waiting
+# for it — it has to survive an evening, a weekend, a day off — and the default
+# hour meant most of them were dead before they were opened.
+#
+# GoTrue has one expiry for every email link (MAILER_OTP_EXP), so this is also
+# how long a password-reset and a magic link stay valid. Tolerable here: the
+# links are single-use, verified server-side by /auth/confirm, and the token
+# hash is long enough that the window is not what an attacker is short of. It
+# does mean a reset link found in a mailbox days later still works, and the
+# project's Security Advisor flags any value above an hour (auth_otp_long_expiry)
+# — that warning is this line, on purpose.
+#
+# The dashboard's own field refuses anything over 86400. The Management API
+# accepts up to 2^31-1, and `supabase config push` goes through the Management
+# API, so this is a value only a config push can set. Changing it in the
+# dashboard afterwards would silently cap it back to a day.
+otp_expiry = 259200
 
 # Auth mail goes out through Resend, from noreply@ophtamanager.de. The domain
 # has to be verified in Resend (its SPF/DKIM records on ophtamanager.de) before
