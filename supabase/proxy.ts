@@ -47,13 +47,22 @@ export async function updateSession(request: NextRequest) {
     const { data } = await supabase.auth.getClaims()
     const user = data?.claims
 
-    // Send unauthenticated users to the login page. Auth-related routes are
-    // allowed through so we don't create a redirect loop.
+    // Send unauthenticated users to the login page. The routes that have to
+    // answer without a session are listed here, and only those: /login and
+    // /forgot-password are the two forms a logged-out user can reach, and
+    // /auth/confirm and /auth/callback are the handlers that turn a token from
+    // an auth email into a session.
+    //
+    // /update-password and /accept-invite are deliberately *not* here. Both are
+    // reached from an email link, but only after one of the handlers above has
+    // established the session, so they are ordinary private pages — and a link
+    // that expired lands on /login instead of an empty password form.
     const { pathname } = request.nextUrl
     const isPublicPath =
         pathname.startsWith('/login') ||
-        pathname.startsWith('/confirm_email') ||
-        pathname.startsWith('/auth') ||
+        pathname.startsWith('/forgot-password') ||
+        pathname.startsWith('/auth/confirm') ||
+        pathname.startsWith('/auth/callback') ||
         // The log ingest endpoint must answer a logged-out caller: its whole
         // job is to record calls that failed because the session was gone, and
         // redirecting it to /login would hand the queue a 200 (the login page)

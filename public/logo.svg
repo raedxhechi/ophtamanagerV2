@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-labelledby="optamanager-logo-title">
+  <title id="optamanager-logo-title">OptaManager</title>
+  <!--
+    The eye, split down the middle: the same blue and red the app uses for the
+    left and right eye everywhere else (see the eye badges on a suborder).
+    Geometry traced from app/favicon.ico so the two stay in step.
+  -->
+  <path fill="#2670B1" d="M100 56.5A84.5 43.5 0 0 0 100 143.5Z"/>
+  <path fill="#E44953" d="M100 56.5A84.5 43.5 0 0 1 100 143.5Z"/>
+  <circle cx="100" cy="100" r="20.5" fill="#FFFFFF"/>
+</svg>

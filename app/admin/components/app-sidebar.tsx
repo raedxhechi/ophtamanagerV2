@@ -11,6 +11,7 @@ import {
   IconListDetails,
   IconSearch,
   IconSettings,
+  IconShieldCheck,
   IconUsers,
 } from "@tabler/icons-react";
 
@@ -59,6 +60,11 @@ const data = {
     {
       title: "Policies",
       url: "/admin/policies",
+      icon: IconShieldCheck,
+    },
+    {
+      title: "Users",
+      url: "/admin/users",
       icon: IconUsers,
     },
     {
