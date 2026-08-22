@@ -285,7 +285,7 @@ port = 465
 user = "resend"
 pass = "env(RESEND_API_KEY)"
 admin_email = "noreply@ophtamanager.de"
-sender_name = "OptaManager"
+sender_name = "Ophtamanager"
 
 # The three emails this project sends. Each one links to /auth/confirm with a
 # `token_hash`, which is verified server-side by app/auth/confirm/route.ts — the
@@ -294,7 +294,7 @@ sender_name = "OptaManager"
 # The links are built from `{{ .SiteURL }}`, so site_url above has to be the
 # deployed app for these to be of any use.
 [auth.email.template.invite]
-subject = "Einladung zu OptaManager · You've been invited"
+subject = "Einladung zu Ophtamanager · You've been invited"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.recovery]

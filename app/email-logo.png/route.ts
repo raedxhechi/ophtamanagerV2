@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 /**
- * The OptaManager mark, served as a PNG for the auth email templates.
+ * The Ophtamanager mark, served as a PNG for the auth email templates.
  *
  * Two reasons it lives here as bytes rather than in `public/`:
  *

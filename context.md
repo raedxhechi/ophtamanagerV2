@@ -1,4 +1,4 @@
-# OptaManager — Project Context
+# Ophtamanager — Project Context
 
 Internal management app for an ophthalmology/pharmacy workflow: patients, insurance
 policies, medicines, and orders (with suborders). Data is being migrated from a
