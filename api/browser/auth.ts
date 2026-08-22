@@ -3,31 +3,48 @@
 import { client } from "./client"
 
 export const login = async ({ email, password }: { email: string, password: string }) => {
-    const response = await client.auth.signInWithPassword({ email, password })
-    console.log({ loginResponse: response })
-    if (response.error) {
-        throw response.error
+    const { data, error } = await client.auth.signInWithPassword({ email, password })
+    if (error) {
+        throw error
     }
-    return response.data
-}
-
-export const register = async ({ email, password }: { email: string, password: string }) => {
-    const response = await client.auth.signUp({
-        email, password, options: {
-            emailRedirectTo: `http://localhost:3000/confirm_email`
-        }
-    })
-    console.log({ registerResponse: response })
+    return data
 }
 
 export const logout = async () => {
-    const response = await client.auth.signOut()
-    console.log({ logoutResponse: response })
+    const { error } = await client.auth.signOut()
+    if (error) {
+        throw error
+    }
 }
 
-export const confirmEmail = async ({ code }: { code: string }) => {
-    const response = await client.auth.exchangeCodeForSession(code)
-    console.log({ confirmEmailResponse: response })
-    return response
+/**
+ * Send the "reset your password" email.
+ *
+ * `redirectTo` only matters if the recovery email template is ever reset to the
+ * stock `{{ .ConfirmationURL }}`: the template in supabase/templates/recovery.html
+ * builds its own link to /auth/confirm and lands on /update-password from there.
+ * Either way the user ends up on the same page.
+ */
+export const requestPasswordReset = async ({ email }: { email: string }) => {
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
+    })
+    if (error) {
+        throw error
+    }
 }
 
+/**
+ * Set a new password for the signed-in user.
+ *
+ * Used by both /update-password (recovery session) and /accept-invite (invite
+ * session); in both cases the session was established by /auth/confirm before
+ * the page rendered.
+ */
+export const updatePassword = async ({ password }: { password: string }) => {
+    const { data, error } = await client.auth.updateUser({ password })
+    if (error) {
+        throw error
+    }
+    return data
+}

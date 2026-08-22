@@ -20,10 +20,13 @@ legacy **Directus** backend onto **Supabase** (Postgres).
 ## Layout
 
 - `app/` — App Router routes
-  - `(auth)/login` — auth pages
+  - `(auth)/` — the logged-out screens: `login`, `forgot-password`, plus
+    `update-password` and `accept-invite` (both need the session an auth email
+    hands over); `app/auth/{confirm,callback}` are the route handlers behind
+    them. See "Auth" below.
   - `(private)/` — order & suborder detail views (`order/[id]`, `suborder/[id]`)
-  - `admin/` — admin dashboard: patients, policies, orders, settings, and
-    `sync/` (Directus → Supabase migration screens per entity)
+  - `admin/` — admin dashboard: patients, policies, orders, users, settings,
+    and `sync/` (Directus → Supabase migration screens per entity)
 - `api/browser/` — client-side Supabase data access, one file per entity
   (orders, patients, medicines, insuranceCompanies, insurancePolicies,
   draftOrders, subOrders); `api/server/` — server-side client
@@ -58,6 +61,86 @@ insurance company). See `types/orders.ts` and `api/browser/orders.ts` (the
   explicitly requested.
 - Schema changes go through timestamped SQL files in `supabase/migrations/`.
 - Supabase is the system of record; Directus is a mirror (see below).
+
+## Auth
+
+Supabase email + password, with **no registration**: `enable_signup = false` on
+both `[auth]` and `[auth.email]`, and there is no sign-up screen. Accounts are
+created by an admin on **`/admin/users`** (or from the Supabase dashboard —
+"Send magic link" is still the way to get a locked-out user back in).
+
+- **`/login`** is the only way in. `/forgot-password` sends the reset mail;
+  `/update-password` sets a new one (it also works for a signed-in user who just
+  wants to change theirs); `/accept-invite` is where an invited account picks its
+  first password. The last two share `SetPasswordForm` — same call, different
+  copy.
+- Every auth email links to **`/auth/confirm?token_hash=…&type=…&next=…`**,
+  which verifies the token server-side and redirects with the session cookies
+  attached. That is what makes a link work on a different device than the one
+  that started the flow — the stock `{{ .ConfirmationURL }}` links go through
+  PKCE, whose code verifier only exists in the original browser.
+  **`/auth/callback`** handles that PKCE case anyway, as a fallback for the day
+  someone resets a template in the dashboard.
+- The templates live in `supabase/templates/*.html` and are wired up in
+  `config.toml` under `[auth.email.template.*]`. They build their links from
+  `{{ .SiteURL }}`, so **`site_url` has to be the deployed app** or every emailed
+  link points at localhost. All three share one card layout — table-based with
+  inline styles, German first and English under a rule, and a plain-text copy of
+  the link for clients that swallow the button.
+- Mail goes out through **Resend** (`[auth.email.smtp]`), from
+  noreply@ophtamanager.de. The API key is never in the repo: `env(RESEND_API_KEY)`
+  is substituted by the CLI at `supabase config push` time. Supabase's built-in
+  sender is capped at 2 emails/hour and the platform refuses a higher
+  `email_sent` rate limit until custom SMTP is set, so SMTP and the 100/hour
+  limit have to land in the same push.
+- The logo in those emails is served by `app/email-logo.png/route.ts`, which
+  holds the bytes inline rather than sitting in `public/`. The two hosts disagree
+  about that directory — v2.ophtamanager.de serves it, the apex 404s every file
+  in it — and an emailed image has to resolve for a stranger's mail client, so it
+  goes through a route that answers on both. `public/logo.svg` is the vector
+  master it was rasterised from.
+- `proxy.ts` names the routes that answer without a session: `/login`,
+  `/forgot-password`, `/auth/confirm`, `/auth/callback`. `/update-password` and
+  `/accept-invite` are deliberately not among them — by the time the user gets
+  there, `/auth/confirm` has given them a session, and a dead link should land on
+  `/login` rather than on an empty password form.
+- Failures never dead-end: the handlers redirect with `?error=<key>`, which the
+  login and forgot-password pages render through `auth.errors.*` in
+  `messages/`. `lib/auth/errors.ts` maps GoTrue's codes onto those keys, so the
+  user never sees an English developer message.
+- An account is only usable once it has a `public.user_data` row: that is where
+  the role and the office live, and RLS scopes everything to them. The invite
+  flow on `/admin/users` writes it in the same action that sends the invitation,
+  so the two cannot drift apart — see "Admin users" below for what happens when
+  they do anyway.
+
+## Admin users
+
+`/admin/users` is where accounts are managed. It lists **auth.users** — the
+account list — left-joined onto `public.user_data`, which is the app's own
+record of what those accounts may do.
+
+- The two halves come from two clients on purpose. `auth.admin.listUsers()` and
+  `auth.admin.inviteUserByEmail()` are service-role endpoints (`supabase/admin.ts`)
+  with no session-based equivalent; everything touching `user_data` goes through
+  the admin's own session, so the RLS policy added in
+  `20260822120000_admin_manage_user_data.sql` is what authorises it. Each server
+  action still checks `is_admin()` first, to turn "no rows matched" into a
+  sentence.
+- **Inviting** sends the Supabase invitation and writes the `user_data` row in
+  one action. If the invitation goes out but the profile insert fails, the
+  account is reported as invited-without-a-role rather than deleted: the table
+  lists it as **No profile**, and opening it finishes the job. The edit drawer
+  upserts for exactly this reason — it is also how an account created straight
+  from the Supabase dashboard gets its row.
+- **Role and office are the whole point of the form.** An admin reaches every
+  office and needs none of their own; for everyone else the office *is* their
+  access, so it is required. An admin cannot drop their own admin role — that
+  would close the screen behind them.
+- Filtering is client-side here, unlike patients and orders: this table holds
+  every account in the app (a few dozen), not a page out of thousands. The role
+  select is driven by `Constants.public.Enums.user_role` in `types/supabase.ts`,
+  so a role added by a migration appears as soon as the types are regenerated.
 
 ## Directus mirror
 

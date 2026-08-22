@@ -29,6 +29,62 @@
     "label": "Language",
     "change": "Change language"
   },
+  "auth": {
+    "login": {
+      "title": "Login to your account",
+      "subtitle": "Enter your email below to login to your account.",
+      "forgotPassword": "Forgot your password?",
+      "submit": "Login"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "We'll email you a link to choose a new password.",
+      "submit": "Send link",
+      "sentTitle": "Check your inbox",
+      "sentDescription": "If an account exists for {email}, a reset link is on its way. Remember to check the spam folder.",
+      "sendAgain": "Use a different email address"
+    },
+    "updatePassword": {
+      "title": "Choose a new password",
+      "subtitle": "Pick a new password for your account.",
+      "submit": "Save password",
+      "success": "Password updated"
+    },
+    "acceptInvite": {
+      "title": "Accept your invitation",
+      "subtitle": "Set a password for {email} to activate your account.",
+      "submit": "Activate account",
+      "success": "Account activated"
+    },
+    "fields": {
+      "email": "Email",
+      "emailPlaceholder": "name@practice.com",
+      "password": "Password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "passwordHint": "At least {min} characters."
+    },
+    "actions": {
+      "backToLogin": "Back to login",
+      "submitting": "One moment…"
+    },
+    "errors": {
+      "invalidCredentials": "That email address or password is not right.",
+      "emailRateLimit": "Too many emails have been requested. Please try again later.",
+      "requestRateLimit": "Too many attempts. Please wait a moment.",
+      "weakPassword": "That password is too weak. Please choose a longer one.",
+      "samePassword": "The new password has to differ from the current one.",
+      "passwordTooShort": "The password must be at least {min} characters long.",
+      "passwordMismatch": "The two passwords do not match.",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "linkExpired": "This link is invalid or has expired. Please request a new one.",
+      "inviteExpired": "This invitation is invalid or has expired. Please ask for a new one.",
+      "signupDisabled": "Registration is disabled. Accounts are created by an administrator.",
+      "emailNotConfirmed": "Please confirm your email address first.",
+      "userBanned": "This account is blocked. Please contact an administrator.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
   "component": {
     "CreateOrderForm": {
       "toasts": {

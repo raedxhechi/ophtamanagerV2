@@ -129,14 +129,18 @@ file_size_limit = "50MiB"
 enabled = true
 
 # Image transformation API is available to Supabase Pro plan.
-# [storage.image_transformation]
-# enabled = true
+# On, because the linked project has it on: `config push` syncs storage too, and
+# a commented-out section here would have turned it off there.
+[storage.image_transformation]
+enabled = true
 
 # Store analytical data in S3 for running ETL jobs over Iceberg Catalog
 # This feature is only available on the hosted platform.
+# Unused by this app, but these mirror the linked project rather than the CLI's
+# defaults — see the note on image transformation above.
 [storage.analytics]
-enabled = false
-max_namespaces = 5
+enabled = true
+max_namespaces = 10
 max_tables = 10
 max_catalogs = 2
 
@@ -156,11 +160,25 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "https://v2.ophtamanager.de"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+# Matching is exact, so each origin is listed twice: the bare origin, and a `/**`
+# glob for the paths the app actually asks to be sent back to
+# (/auth/callback?next=…). Both dev spellings are here because `npm run dev`
+# serves localhost while 127.0.0.1 is a different origin to GoTrue.
+additional_redirect_urls = [
+  "https://v2.ophtamanager.de",
+  "https://v2.ophtamanager.de/**",
+  # The apex still answers; kept so anything pointed at it keeps working.
+  "https://ophtamanager.de",
+  "https://ophtamanager.de/**",
+  "http://localhost:3000",
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3000/**",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -173,7 +191,10 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-enable_signup = true
+# Off: there is no registration screen. Accounts are created by an admin (invite
+# or "create user" in the dashboard) and the user picks a password on
+# /accept-invite. See app/(auth) and supabase/templates/invite.html.
+enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
@@ -196,7 +217,11 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 2
+# Password resets and invites are the only mail this project sends, but 2/hour
+# (the default, and the hard cap of Supabase's built-in sender) is not enough
+# for onboarding a practice. The platform refuses this value unless
+# [auth.email.smtp] below is set, so the two land together on a config push.
+email_sent = 100
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -218,6 +243,15 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
+#
+# LEAVE THIS ON. Despite the name, the CLI pushes it as EXTERNAL_EMAIL_ENABLED —
+# the email provider's master switch, not a signup-only toggle. Setting it false
+# and pushing takes email *logins* down with it: GoTrue answers every
+# /token?grant_type=password with `email_provider_disabled`, and nobody can sign
+# in at all.
+#
+# Registration is closed by `enable_signup = false` under [auth] above, which is
+# the project-wide switch and the only one that means what it says.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -233,20 +267,43 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Auth mail goes out through Resend, from noreply@ophtamanager.de. The domain
+# has to be verified in Resend (its SPF/DKIM records on ophtamanager.de) before
+# anything is delivered.
+#
+# Without this block Supabase falls back to its own sender, which is capped at
+# 2 emails/hour no matter what [auth.rate_limit] email_sent says — enough to
+# lock up an afternoon of invitations.
+#
+# The API key is never written here: `env(RESEND_API_KEY)` is substituted by the
+# CLI at `supabase config push` time, so the value lives in the environment
+# (.envrc, which .gitignore already covers) and never in the repo.
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "noreply@ophtamanager.de"
+sender_name = "OptaManager"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# The three emails this project sends. Each one links to /auth/confirm with a
+# `token_hash`, which is verified server-side by app/auth/confirm/route.ts — the
+# stock `{{ .ConfirmationURL }}` links only work in the browser that started the
+# flow, which is the wrong assumption for a link someone opens on their phone.
+# The links are built from `{{ .SiteURL }}`, so site_url above has to be the
+# deployed app for these to be of any use.
+[auth.email.template.invite]
+subject = "Einladung zu OptaManager · You've been invited"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Passwort zurücksetzen · Reset your password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Ihr Anmeldelink · Your sign-in link"
+content_path = "./supabase/templates/magic-link.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

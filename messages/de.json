@@ -29,6 +29,62 @@
     "label": "Sprache",
     "change": "Sprache ändern"
   },
+  "auth": {
+    "login": {
+      "title": "Bei Ihrem Konto anmelden",
+      "subtitle": "Geben Sie Ihre E-Mail-Adresse ein, um sich anzumelden.",
+      "forgotPassword": "Passwort vergessen?",
+      "submit": "Anmelden"
+    },
+    "forgotPassword": {
+      "title": "Passwort zurücksetzen",
+      "subtitle": "Wir senden Ihnen einen Link, mit dem Sie ein neues Passwort vergeben können.",
+      "submit": "Link senden",
+      "sentTitle": "E-Mail ist unterwegs",
+      "sentDescription": "Falls ein Konto zu {email} gehört, erhalten Sie gleich einen Link zum Zurücksetzen. Bitte prüfen Sie auch den Spam-Ordner.",
+      "sendAgain": "Andere E-Mail-Adresse verwenden"
+    },
+    "updatePassword": {
+      "title": "Neues Passwort vergeben",
+      "subtitle": "Wählen Sie ein neues Passwort für Ihr Konto.",
+      "submit": "Passwort speichern",
+      "success": "Passwort aktualisiert"
+    },
+    "acceptInvite": {
+      "title": "Einladung annehmen",
+      "subtitle": "Vergeben Sie ein Passwort für {email}, um Ihr Konto zu aktivieren.",
+      "submit": "Konto aktivieren",
+      "success": "Konto aktiviert"
+    },
+    "fields": {
+      "email": "E-Mail",
+      "emailPlaceholder": "name@praxis.de",
+      "password": "Passwort",
+      "newPassword": "Neues Passwort",
+      "confirmPassword": "Passwort bestätigen",
+      "passwordHint": "Mindestens {min} Zeichen."
+    },
+    "actions": {
+      "backToLogin": "Zurück zur Anmeldung",
+      "submitting": "Einen Moment…"
+    },
+    "errors": {
+      "invalidCredentials": "E-Mail-Adresse oder Passwort ist falsch.",
+      "emailRateLimit": "Es wurden zu viele E-Mails angefordert. Bitte versuchen Sie es später erneut.",
+      "requestRateLimit": "Zu viele Versuche. Bitte warten Sie einen Moment.",
+      "weakPassword": "Dieses Passwort ist zu schwach. Bitte wählen Sie ein längeres.",
+      "samePassword": "Das neue Passwort muss sich vom bisherigen unterscheiden.",
+      "passwordTooShort": "Das Passwort muss mindestens {min} Zeichen lang sein.",
+      "passwordMismatch": "Die beiden Passwörter stimmen nicht überein.",
+      "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+      "linkExpired": "Dieser Link ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen an.",
+      "inviteExpired": "Diese Einladung ist ungültig oder abgelaufen. Bitte lassen Sie sich neu einladen.",
+      "signupDisabled": "Die Registrierung ist deaktiviert. Konten werden von der Administration angelegt.",
+      "emailNotConfirmed": "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.",
+      "userBanned": "Dieses Konto ist gesperrt. Bitte wenden Sie sich an die Administration.",
+      "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    }
+  },
   "component": {
     "CreateOrderForm": {
       "toasts": {
