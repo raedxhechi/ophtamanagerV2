@@ -1,5 +1,6 @@
 {
   "header": {
+    "adminDashboard": "Dashboard",
     "doctorOffice": "Arztpraxis",
     "doctorOfficeDetails": "Praxisdaten",
     "pharmacy": "Apotheke",

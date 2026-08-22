@@ -8,6 +8,7 @@ import type { UserDataWithOffice } from "@/types/user";
 import { getPolicyImageUrl } from "@/lib/policyImage";
 import { createClient } from "@/supabase/server";
 
+import { AdminDashboardButton } from "./AdminDashboardButton";
 import { EntitySheet } from "./EntitySheet";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
@@ -51,8 +52,13 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/15 bg-gradient-to-r from-blue-600/85 via-sky-500/80 to-blue-600/85 text-white shadow-lg shadow-blue-950/20 backdrop-blur-xl before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/30 relative">
       <div className="mx-auto flex h-20 w-full max-w-[96rem] items-center justify-between gap-4 px-6 py-5 lg:px-10">
-        {/* 1. Logo area */}
-        <Logo />
+        {/* 1. Logo area — admins get a way back to /admin next to it */}
+        <div className="flex items-center gap-4">
+          <Logo />
+          {userData?.role === "admin" ? (
+            <AdminDashboardButton label={t("adminDashboard")} />
+          ) : null}
+        </div>
 
         {/* 2. Doctor office — info button opens a details sidebar */}
         <EntitySheet
