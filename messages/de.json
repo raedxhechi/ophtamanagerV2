@@ -56,6 +56,14 @@
       "submit": "Konto aktivieren",
       "success": "Konto aktiviert"
     },
+    "accountSetup": {
+      "title": "Ihr Konto ist noch nicht eingerichtet",
+      "subtitle": "Sie sind als {email} angemeldet, aber die Einrichtung ist noch nicht abgeschlossen.",
+      "explanation": "Ihrem Konto wurden noch keine Rolle und keine Praxis zugewiesen, deshalb gibt es nichts anzuzeigen. Das muss die Administration abschließen — danach können Sie hier erneut prüfen.",
+      "recheck": "Erneut prüfen",
+      "checking": "Einen Moment…",
+      "logout": "Abmelden"
+    },
     "fields": {
       "email": "E-Mail",
       "emailPlaceholder": "name@praxis.de",

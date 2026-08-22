@@ -56,6 +56,14 @@
       "submit": "Activate account",
       "success": "Account activated"
     },
+    "accountSetup": {
+      "title": "Your account isn't set up yet",
+      "subtitle": "You are signed in as {email}, but the setup isn't finished.",
+      "explanation": "Your account has not been given a role or a practice yet, so there is nothing for it to show. An administrator has to complete this — once they have, come back here and check again.",
+      "recheck": "Check again",
+      "checking": "One moment…",
+      "logout": "Log out"
+    },
     "fields": {
       "email": "Email",
       "emailPlaceholder": "name@practice.com",
