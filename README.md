@@ -1,4 +1,4 @@
-# OptaManager
+# Ophtamanager
 
 Internal management app for an ophthalmology/pharmacy workflow: patients,
 insurance policies, medicines, and orders (with suborders). Built on Next.js 16
