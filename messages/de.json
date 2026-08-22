@@ -1,5 +1,6 @@
 {
   "header": {
+    "adminDashboard": "Dashboard",
     "doctorOffice": "Arztpraxis",
     "doctorOfficeDetails": "Praxisdaten",
     "pharmacy": "Apotheke",
@@ -55,6 +56,14 @@
       "subtitle": "Vergeben Sie ein Passwort für {email}, um Ihr Konto zu aktivieren.",
       "submit": "Konto aktivieren",
       "success": "Konto aktiviert"
+    },
+    "accountSetup": {
+      "title": "Ihr Konto ist noch nicht eingerichtet",
+      "subtitle": "Sie sind als {email} angemeldet, aber die Einrichtung ist noch nicht abgeschlossen.",
+      "explanation": "Ihrem Konto wurden noch keine Rolle und keine Praxis zugewiesen, deshalb gibt es nichts anzuzeigen. Das muss die Administration abschließen — danach können Sie hier erneut prüfen.",
+      "recheck": "Erneut prüfen",
+      "checking": "Einen Moment…",
+      "logout": "Abmelden"
     },
     "fields": {
       "email": "E-Mail",
