@@ -26,6 +26,8 @@ export type AdminUserRow = {
   status: UserStatus;
   created_at: string | null;
   last_sign_in_at: string | null;
+  /** When the last invitation went out — null for an account never invited. */
+  invited_at: string | null;
   /**
    * False for an account that exists in auth but has no profile — it can sign
    * in and will see nothing, so the table calls it out and the drawer fixes it.
@@ -109,6 +111,9 @@ export async function AdminUsersData() {
           : "pending",
       created_at: user.created_at ?? null,
       last_sign_in_at: user.last_sign_in_at ?? null,
+      // Resending moves this on, so it doubles as "how old is the link they
+      // are holding" — which is what decides whether it still works.
+      invited_at: user.invited_at ?? null,
       has_profile: profile !== undefined,
     };
   });

@@ -26,6 +26,7 @@ import { OfficeFilter, type OfficeOption } from "../../_components/OfficeFilter"
 import type { AdminUserRow, UserStatus } from "./AdminUsersData";
 import { AdminUserDrawer } from "./AdminUserDrawer";
 import { InviteUserDrawer } from "./InviteUserDrawer";
+import { canResendInvite, ResendInviteButton } from "./ResendInviteButton";
 
 function orDash(value: string | null): React.ReactNode {
   return value ? value : <span className="text-muted-foreground">—</span>;
@@ -98,6 +99,23 @@ const columns: ColumnDef<AdminUserRow>[] = [
     accessorKey: "last_sign_in_at",
     header: "Last sign-in",
     cell: ({ row }) => orDash(formatDate(row.original.last_sign_in_at) || null),
+  },
+  {
+    id: "actions",
+    header: "",
+    enableSorting: false,
+    // Only the accounts still sitting on an invitation get anything here, so
+    // the column reads as a to-do list: every button in it is someone who
+    // hasn't made it in yet.
+    cell: ({ row }) =>
+      canResendInvite(row.original.status) ? (
+        <div className="flex justify-end">
+          <ResendInviteButton
+            userId={row.original.id}
+            status={row.original.status}
+          />
+        </div>
+      ) : null,
   },
 ];
 

@@ -16,13 +16,9 @@ export type InviteUserState =
   | { success: true; email: string }
   | null;
 export type UpdateUserState = { error: string } | { success: true } | null;
-export type DeleteUserState =
+export type ResendInviteState =
   | { error: string }
-  | { success: true; kept: KeptRows }
-  | null;
-
-/** What the delete left behind, for the confirmation the admin gets back. */
-export type KeptRows = { orders: number; draft_orders: number; system_logs: number };
+  | { success: true; email: string };
 
 /** Trim a FormData string field, returning null when empty. */
 function field(formData: FormData, key: string): string | null {
@@ -96,6 +92,21 @@ function parseAssignment(
 }
 
 /**
+ * Where an invitation should land if the template is ever reset to the stock
+ * `{{ .ConfirmationURL }}` — ours builds its own link to /auth/confirm, so this
+ * is only a fallback. Taken from the request so it follows whichever host the
+ * admin is working on.
+ */
+async function inviteRedirectTo(): Promise<string | undefined> {
+  const headerStore = await headers();
+  const host = headerStore.get("host");
+  const proto = headerStore.get("x-forwarded-proto") ?? "http";
+  return host
+    ? `${proto}://${host}/auth/callback?next=/accept-invite`
+    : undefined;
+}
+
+/**
  * Invite someone to the app: a Supabase auth invitation plus the user_data row
  * that gives the account a role and an office.
  *
@@ -122,15 +133,7 @@ export async function inviteUser(
   const first_name = field(formData, "first_name");
   const last_name = field(formData, "last_name");
 
-  // Only used if the invite template is ever reset to the stock
-  // `{{ .ConfirmationURL }}` — ours builds its own link to /auth/confirm. Taken
-  // from the request so it follows whichever host the admin is working on.
-  const headerStore = await headers();
-  const host = headerStore.get("host");
-  const proto = headerStore.get("x-forwarded-proto") ?? "http";
-  const redirectTo = host
-    ? `${proto}://${host}/auth/callback?next=/accept-invite`
-    : undefined;
+  const redirectTo = await inviteRedirectTo();
 
   // The one thing on this screen that cannot go through the caller's session:
   // sending an invitation is a service-role endpoint whoever asks for it.
@@ -226,51 +229,72 @@ export async function updateUserProfile(
 }
 
 /**
- * Delete a user: their profile and everything that describes only them, then
- * the auth account itself.
+ * Send the invitation again to an account that never accepted the first one.
  *
- * The app-side half is one transaction inside public.delete_app_user() — see
- * 20260822140000_delete_app_user.sql for what it keeps and why. The auth user
- * has to go afterwards and separately: user_data references it ON DELETE
- * RESTRICT, so it cannot be removed until that transaction has committed, and
- * `auth.admin.deleteUser` is a service-role endpoint either way.
+ * Invitation links expire (`otp_expiry` in supabase/config.toml governs all
+ * emailed auth links, invitations included), and the account is left sitting in
+ * auth with no password and no way in. Re-inviting mints a fresh token and
+ * sends the same email; GoTrue allows it precisely because the address is not
+ * confirmed yet, and refuses once it is — which is what the `email_exists`
+ * branch below is about.
  *
- * That split is the one failure mode worth knowing about. If the profile goes
- * and the auth deletion then fails, the account survives with no profile — the
- * table lists it as "No profile" and running this again finishes the job, since
- * every step is idempotent.
+ * A plain argument rather than a form action: the button lives inside the edit
+ * drawer's form, and a form inside a form is not a thing.
  */
-export async function deleteUser(
-  _prev: DeleteUserState,
-  formData: FormData
-): Promise<DeleteUserState> {
+export async function resendInvite(userId: string): Promise<ResendInviteState> {
   const supabase = await createClient();
-  const guard = await requireAdmin(supabase, "delete users");
+  const guard = await requireAdmin(supabase, "resend invitations");
   if ("error" in guard) return guard;
 
-  const id = field(formData, "id");
-  if (!id) {
-    return { error: "Missing user id." };
+  // auth is the authority on the address and on whether the invitation was
+  // ever taken up, and only the service role may ask it.
+  const admin = createAdminClient();
+  const { data: existing, error: lookupError } =
+    await admin.auth.admin.getUserById(userId);
+
+  if (lookupError || !existing?.user) {
+    return { error: lookupError?.message ?? "That account no longer exists." };
   }
 
-  // Also enforced inside delete_app_user(), which is what makes it true for any
-  // caller rather than just this form.
-  if (id === guard.userId) {
-    return { error: "You can't delete your own account." };
+  const { user } = existing;
+  const email = user.email;
+  if (!email) {
+    return { error: "That account has no email address to invite." };
   }
 
-  const { data, error } = await supabase.rpc("delete_app_user", { p_user: id });
-  if (error) {
-    return { error: error.message };
-  }
-
-  const { error: authError } = await createAdminClient().auth.admin.deleteUser(id);
-  if (authError) {
+  // Nothing to resend: they are already in. A forgotten password is a different
+  // email and a different screen.
+  if (user.last_sign_in_at) {
     return {
-      error: `The profile was removed, but the sign-in account could not be (${authError.message}). It now shows as "No profile" in the table — deleting it again will finish the job.`,
+      error: `${email} has already signed in. Send a password reset instead.`,
     };
   }
 
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: await inviteRedirectTo(),
+    // Carried over rather than rebuilt: the header greets people by these
+    // before their user_data row is read, and passing nothing would leave the
+    // metadata as it is anyway — passing the current values keeps that explicit.
+    data: user.user_metadata ?? {},
+  });
+
+  if (error) {
+    if (error.code === "email_exists") {
+      // The address is confirmed, so GoTrue treats it as a real account and
+      // will not invite it again — an account created straight from the
+      // Supabase dashboard usually lands here.
+      return {
+        error: `${email} is already confirmed, so Supabase won't send another invitation. Send them a password reset (or a magic link from the dashboard) instead.`,
+      };
+    }
+    if (error.code === "over_email_send_rate_limit") {
+      return {
+        error: `Too many emails sent in the last hour to invite ${email} again. Try again later.`,
+      };
+    }
+    return { error: error.message };
+  }
+
   revalidatePath("/admin/users");
-  return { success: true, kept: data as unknown as KeptRows };
+  return { success: true, email };
 }

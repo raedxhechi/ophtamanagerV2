@@ -81,6 +81,14 @@ created by an admin on **`/admin/users`** (or from the Supabase dashboard —
   PKCE, whose code verifier only exists in the original browser.
   **`/auth/callback`** handles that PKCE case anyway, as a fallback for the day
   someone resets a template in the dashboard.
+- **Emailed links live 72 hours** (`otp_expiry = 259200`). That single setting is
+  the lifetime of every auth link — invitation, password reset, magic link —
+  because GoTrue has no separate invite expiry, so the three days apply to all
+  three templates and each one says so in its own copy. The dashboard refuses
+  anything above 86400; the Management API does not, and `config push` goes
+  through the Management API — so `config.toml` is the only place the value
+  survives. A change made in the dashboard alone is overwritten by the next
+  push, which is exactly how the repo and the project drifted apart once.
 - The templates live in `supabase/templates/*.html` and are wired up in
   `config.toml` under `[auth.email.template.*]`. They build their links from
   `{{ .SiteURL }}`, so **`site_url` has to be the deployed app** or every emailed
@@ -141,6 +149,15 @@ record of what those accounts may do.
   lists it as **No profile**, and opening it finishes the job. The edit drawer
   upserts for exactly this reason — it is also how an account created straight
   from the Supabase dashboard gets its row.
+- **Resending an invitation** is a row action on every account that has never
+  signed in, and the same button sits in the drawer. It calls
+  `inviteUserByEmail` again, which GoTrue allows only while the address is
+  unconfirmed — exactly the accounts that never accepted — and which issues a
+  fresh token, so the link already in their inbox stops working. A confirmed
+  account comes back as `email_exists`; the action turns that into "send a
+  password reset instead" rather than repeating GoTrue's wording. `invited_at`
+  is on the row for the same reason: it says how old the link they are holding
+  is. See "Auth" above for how long that link lasts.
 - **Role and office are the whole point of the form.** An admin reaches every
   office and needs none of their own; for everyone else the office *is* their
   access, so it is required. An admin cannot drop their own admin role — that

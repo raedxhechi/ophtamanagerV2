@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import type { OfficeOption } from "../../_components/OfficeFilter";
-import { inviteUser } from "../actions";
+import { inviteUser, type InviteUserState } from "../actions";
 import { UserFields } from "./UserFields";
 
 /**
@@ -67,18 +67,28 @@ function InviteUserForm({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [state, formAction, isPending] = useActionState(inviteUser, null);
 
-  // Close on success and pull the new row into the list. The action already
-  // revalidates; the refresh is what re-runs the query for the page the admin
-  // is standing on.
-  React.useEffect(() => {
-    if (state && "success" in state) {
-      toast.success(`Invitation sent to ${state.email}`);
-      onClose();
-      router.refresh();
-    }
-  }, [state, onClose, router]);
+  // Success is handled in the submission itself rather than in an effect
+  // watching `state`. A successful `state` outlives its toast, so an effect
+  // reading it fires again on every later render that touches its dependencies
+  // — and `onClose` is a fresh closure on each render of the list above. Worse,
+  // one of the things this does is `router.refresh()`, which re-renders that
+  // list: effect toasts, refresh re-renders, effect toasts again, forever.
+  const [state, formAction, isPending] = useActionState(
+    async (previous: InviteUserState, formData: FormData) => {
+      const result = await inviteUser(previous, formData);
+      if (result && "success" in result) {
+        // Close on success and pull the new row into the list. The action
+        // already revalidates; the refresh is what re-runs the query for the
+        // page the admin is standing on.
+        toast.success(`Invitation sent to ${result.email}`);
+        onClose();
+        router.refresh();
+      }
+      return result;
+    },
+    null,
+  );
 
   return (
     <form action={formAction} className="flex min-h-0 flex-1 flex-col">
