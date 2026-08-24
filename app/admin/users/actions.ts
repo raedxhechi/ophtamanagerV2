@@ -16,6 +16,13 @@ export type InviteUserState =
   | { success: true; email: string }
   | null;
 export type UpdateUserState = { error: string } | { success: true } | null;
+export type DeleteUserState =
+  | { error: string }
+  | { success: true; kept: KeptRows }
+  | null;
+
+/** What the delete left behind, for the confirmation the admin gets back. */
+export type KeptRows = { orders: number; draft_orders: number; system_logs: number };
 export type ResendInviteState =
   | { error: string }
   | { success: true; email: string };
@@ -297,4 +304,54 @@ export async function resendInvite(userId: string): Promise<ResendInviteState> {
 
   revalidatePath("/admin/users");
   return { success: true, email };
+}
+
+/**
+ * Delete a user: their profile and everything that describes only them, then
+ * the auth account itself.
+ *
+ * The app-side half is one transaction inside public.delete_app_user() — see
+ * 20260822140000_delete_app_user.sql for what it keeps and why. The auth user
+ * has to go afterwards and separately: user_data references it ON DELETE
+ * RESTRICT, so it cannot be removed until that transaction has committed, and
+ * `auth.admin.deleteUser` is a service-role endpoint either way.
+ *
+ * That split is the one failure mode worth knowing about. If the profile goes
+ * and the auth deletion then fails, the account survives with no profile — the
+ * table lists it as "No profile" and running this again finishes the job, since
+ * every step is idempotent.
+ */
+export async function deleteUser(
+  _prev: DeleteUserState,
+  formData: FormData
+): Promise<DeleteUserState> {
+  const supabase = await createClient();
+  const guard = await requireAdmin(supabase, "delete users");
+  if ("error" in guard) return guard;
+
+  const id = field(formData, "id");
+  if (!id) {
+    return { error: "Missing user id." };
+  }
+
+  // Also enforced inside delete_app_user(), which is what makes it true for any
+  // caller rather than just this form.
+  if (id === guard.userId) {
+    return { error: "You can't delete your own account." };
+  }
+
+  const { data, error } = await supabase.rpc("delete_app_user", { p_user: id });
+  if (error) {
+    return { error: error.message };
+  }
+
+  const { error: authError } = await createAdminClient().auth.admin.deleteUser(id);
+  if (authError) {
+    return {
+      error: `The profile was removed, but the sign-in account could not be (${authError.message}). It now shows as "No profile" in the table — deleting it again will finish the job.`,
+    };
+  }
+
+  revalidatePath("/admin/users");
+  return { success: true, kept: data as unknown as KeptRows };
 }

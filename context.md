@@ -92,7 +92,10 @@ created by an admin on **`/admin/users`** (or from the Supabase dashboard —
 - The templates live in `supabase/templates/*.html` and are wired up in
   `config.toml` under `[auth.email.template.*]`. They build their links from
   `{{ .SiteURL }}`, so **`site_url` has to be the deployed app** or every emailed
-  link points at localhost. All three share one card layout — table-based with
+  link points at localhost. That address is **ophthamanager.de** — with the `h`,
+  as in ophthalmology. The h-less `ophtamanager.de` and `v2.ophtamanager.de`
+  are still owned and still listed in `additional_redirect_urls`, so links
+  emailed before the move keep landing. All three share one card layout — table-based with
   inline styles, German first and English under a rule, and a plain-text copy of
   the link for clients that swallow the button.
 - **Every emailed link is valid for 72 hours** (`otp_expiry = 259200` under
@@ -104,16 +107,19 @@ created by an admin on **`/admin/users`** (or from the Supabase dashboard —
   Advisor flags the value. Only a `supabase config push` can set it: the
   dashboard's own field caps at 86400 and would quietly halve it.
 - Mail goes out through **Resend** (`[auth.email.smtp]`), from
-  noreply@ophtamanager.de. The API key is never in the repo: `env(RESEND_API_KEY)`
+  noreply@ophtamanager.de — the h-less spelling, deliberately: that is the
+  domain verified in Resend, and a from-address does not have to match
+  `site_url`. Moving it means verifying ophthamanager.de there first, or mail
+  stops being delivered. The API key is never in the repo: `env(RESEND_API_KEY)`
   is substituted by the CLI at `supabase config push` time. Supabase's built-in
   sender is capped at 2 emails/hour and the platform refuses a higher
   `email_sent` rate limit until custom SMTP is set, so SMTP and the 100/hour
   limit have to land in the same push.
 - The logo in those emails is served by `app/email-logo.png/route.ts`, which
-  holds the bytes inline rather than sitting in `public/`. The two hosts disagree
+  holds the bytes inline rather than sitting in `public/`. The hosts disagree
   about that directory — v2.ophtamanager.de serves it, the apex 404s every file
   in it — and an emailed image has to resolve for a stranger's mail client, so it
-  goes through a route that answers on both. `public/logo.svg` is the vector
+  goes through a route that answers on any of them. `public/logo.svg` is the vector
   master it was rasterised from.
 - `proxy.ts` names the routes that answer without a session: `/login`,
   `/forgot-password`, `/auth/confirm`, `/auth/callback`. `/update-password` and

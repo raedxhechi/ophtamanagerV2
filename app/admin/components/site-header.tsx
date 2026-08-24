@@ -58,7 +58,7 @@ export function SiteHeader() {
           <div className="rheal-logo-mark overflow-hidden size-8 min-w-8 min-h-8 shrink-0">
             {/* <RhealMark size={32} /> */}
           </div>
-          <span className="rheal-wordmark truncate">ophtamanager</span>
+          <span className="rheal-wordmark truncate">ophthamanager</span>
         </div>
 
         <div className="ml-auto flex items-center gap-2">

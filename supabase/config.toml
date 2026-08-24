@@ -160,7 +160,7 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://ophtamanager.de"
+site_url = "https://ophthamanager.de"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
@@ -169,9 +169,13 @@ site_url = "https://ophtamanager.de"
 # (/auth/callback?next=…). Both dev spellings are here because `npm run dev`
 # serves localhost while 127.0.0.1 is a different origin to GoTrue.
 additional_redirect_urls = [
+  "https://ophthamanager.de",
+  "https://ophthamanager.de/**",
+  # The h-less spelling was the address until 2026-08-24 and is still owned, as
+  # is the v2 subdomain under it. Both stay listed: links already sitting in
+  # inboxes were built from the old site_url and still have to land.
   "https://ophtamanager.de",
   "https://ophtamanager.de/**",
-  # The v2 subdomain still answers; kept so anything pointed at it keeps working.
   "https://v2.ophtamanager.de",
   "https://v2.ophtamanager.de/**",
   "http://localhost:3000",
@@ -284,7 +288,10 @@ otp_expiry = 259200
 
 # Auth mail goes out through Resend, from noreply@ophtamanager.de. The domain
 # has to be verified in Resend (its SPF/DKIM records on ophtamanager.de) before
-# anything is delivered.
+# anything is delivered — which is why this address keeps the h-less spelling
+# while site_url has moved to ophthamanager.de. The from-address and the app's
+# address do not have to match, and moving this one would mean re-verifying the
+# new domain in Resend first; until that is done, mail sent from it is dropped.
 #
 # Without this block Supabase falls back to its own sender, which is capped at
 # 2 emails/hour no matter what [auth.rate_limit] email_sent says — enough to
@@ -300,7 +307,7 @@ port = 465
 user = "resend"
 pass = "env(RESEND_API_KEY)"
 admin_email = "noreply@ophtamanager.de"
-sender_name = "Ophtamanager"
+sender_name = "Ophthamanager"
 
 # The three emails this project sends. Each one links to /auth/confirm with a
 # `token_hash`, which is verified server-side by app/auth/confirm/route.ts — the
