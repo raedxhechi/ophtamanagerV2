@@ -104,10 +104,13 @@ const columns: ColumnDef<AdminUserRow>[] = [
 export function AdminUsersTable({
   data,
   offices,
+  currentUserId,
 }: {
   data: AdminUserRow[];
   /** Every doctor office, for the filter and both drawers' office select. */
   offices: OfficeOption[];
+  /** The signed-in admin, so the drawer can refuse to delete them. */
+  currentUserId: string | null;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [selected, setSelected] = React.useState<AdminUserRow | null>(null);
@@ -222,6 +225,7 @@ export function AdminUsersTable({
       <AdminUserDrawer
         user={selected}
         offices={offices}
+        currentUserId={currentUserId}
         open={selected !== null}
         onOpenChange={(open) => {
           if (!open) setSelected(null);

@@ -87,6 +87,14 @@ created by an admin on **`/admin/users`** (or from the Supabase dashboard —
   link points at localhost. All three share one card layout — table-based with
   inline styles, German first and English under a rule, and a plain-text copy of
   the link for clients that swallow the button.
+- **Every emailed link is valid for 72 hours** (`otp_expiry = 259200` under
+  `[auth.email]`). GoTrue has a single expiry for all of them, so invitations,
+  password resets and magic links share it — the invite is what needs the room
+  (it goes to someone who isn't waiting for it), and the default hour killed
+  most of them before they were opened. The links are single-use and verified
+  server-side, but a reset link does stay live for three days, and the Security
+  Advisor flags the value. Only a `supabase config push` can set it: the
+  dashboard's own field caps at 86400 and would quietly halve it.
 - Mail goes out through **Resend** (`[auth.email.smtp]`), from
   noreply@ophtamanager.de. The API key is never in the repo: `env(RESEND_API_KEY)`
   is substituted by the CLI at `supabase config push` time. Supabase's built-in
@@ -137,6 +145,16 @@ record of what those accounts may do.
   office and needs none of their own; for everyone else the office *is* their
   access, so it is required. An admin cannot drop their own admin role — that
   would close the screen behind them.
+- **Deleting** a user runs `public.delete_app_user()` (one transaction, admin
+  check inside) and then `auth.admin.deleteUser()`. Every FK into `user_data` is
+  ON DELETE RESTRICT, so the function decides what happens to each: table
+  preferences and office grants describe nobody else and go with the user, while
+  orders, draft orders and audit rows stay and lose their link — they are the
+  practice's record, not the user's property. `system_logs` keeps `user_email`
+  and `user_role` on the row, so an unlinked audit entry still says who acted.
+  The auth account can only go after the profile has (that FK again), which is
+  the one non-atomic step: if it fails, the account is left showing as
+  "No profile" and running the delete again finishes it.
 - Filtering is client-side here, unlike patients and orders: this table holds
   every account in the app (a few dozen), not a page out of thousands. The role
   select is driven by `Constants.public.Enums.user_role` in `types/supabase.ts`,
