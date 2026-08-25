@@ -362,6 +362,7 @@ export type Database = {
           medicine_id: string
           quantity: number
           search_text: string | null
+          status: Database["public"]["Enums"]["order_status"] | null
           updated_at: string
         }
         Insert: {
@@ -375,6 +376,7 @@ export type Database = {
           medicine_id: string
           quantity: number
           search_text?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
           updated_at?: string
         }
         Update: {
@@ -388,6 +390,7 @@ export type Database = {
           medicine_id?: string
           quantity?: number
           search_text?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
           updated_at?: string
         }
         Relationships: [
@@ -747,6 +750,7 @@ export type Database = {
           created_at: string
           orders_table_settings: Json | null
           patient_table_settings: Json | null
+          selected_doctor_office: string | null
           updated_at: string
           user_id: string
         }
@@ -756,6 +760,7 @@ export type Database = {
           created_at?: string
           orders_table_settings?: Json | null
           patient_table_settings?: Json | null
+          selected_doctor_office?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -765,10 +770,18 @@ export type Database = {
           created_at?: string
           orders_table_settings?: Json | null
           patient_table_settings?: Json | null
+          selected_doctor_office?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_settings_selected_doctor_office_fkey"
+            columns: ["selected_doctor_office"]
+            isOneToOne: false
+            referencedRelation: "doctor_office"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_settings_user_id_fkey"
             columns: ["user_id"]
@@ -819,6 +832,7 @@ export type Database = {
       insurance_type: "Privat" | "Gesetzlich"
       invoice_types: "Praxis" | "Kasse" | "Patient"
       medicine_type: "Rezeptur" | "Fertigarzneimittel"
+      order_status: "pending" | "processing" | "ready" | "delivered"
       user_role: "admin" | "doctor" | "manager" | "assistant" | "pharmacist"
     }
     CompositeTypes: {
@@ -954,6 +968,7 @@ export const Constants = {
       insurance_type: ["Privat", "Gesetzlich"],
       invoice_types: ["Praxis", "Kasse", "Patient"],
       medicine_type: ["Rezeptur", "Fertigarzneimittel"],
+      order_status: ["pending", "processing", "ready", "delivered"],
       user_role: ["admin", "doctor", "manager", "assistant", "pharmacist"],
     },
   },

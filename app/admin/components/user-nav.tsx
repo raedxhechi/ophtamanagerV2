@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import { client } from "@/api/browser/client";
-// import { useUserStore } from "@/zustand/user/user-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { userDisplayName, userInitials } from "@/lib/user";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,68 +14,62 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
-// import { logout } from "@directus/sdk";
-
-import { useRouter } from "next/navigation";
+import { useUserStore } from "@/zustand/user/user-provider";
 
 export function UserNav() {
-  //   const { user } = useUserStore((state) => state);
   const router = useRouter();
-  const user = {
-    firstName: "Raed",
-    lastName: "Hehci",
-    email: "example@gmail.com",
-  };
-  const handleLogout = async () => {
-    await client.auth.signOut()
+  const user = useUserStore((state) => state.user);
+  const userData = useUserStore((state) => state.userData);
+  const clear = useUserStore((state) => state.clear);
 
+  const name = userDisplayName(user, userData);
+  const office = userData?.doctor_office?.name;
+
+  const handleLogout = async () => {
+    await client.auth.signOut();
+    // Emptied before the redirect so the menu can't flash the old account on
+    // the way out — the store instance dies with the layout, but the navigation
+    // takes a moment.
+    clear();
+    router.push("/login");
+    router.refresh();
   };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {/* <AvatarImage src="/avatars/03.png" alt="@shadcn" /> */}
-            <AvatarFallback>{`${user?.firstName[0].toUpperCase()}${user?.lastName[0].toUpperCase()}`}</AvatarFallback>
+            <AvatarFallback>{userInitials(name, user?.email)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{`${user?.firstName} ${user?.lastName}`}</p>
-            <p className="text-xs leading-none text-muted-foreground">
+            <p className="text-sm leading-none font-medium">{name}</p>
+            <p className="text-muted-foreground text-xs leading-none">
               {user?.email}
             </p>
+            {userData?.role ? (
+              <p className="text-muted-foreground text-xs leading-none capitalize">
+                {/* An admin holds no office of their own, so there is often
+                    nothing to put after the role. */}
+                {office ? `${userData.role} · ${office}` : userData.role}
+              </p>
+            ) : null}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href={"/profile"}>
-            <DropdownMenuItem>
-              Profile
-              <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Link>
-          {/* <DropdownMenuItem>
-            Billing
-            <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-          </DropdownMenuItem> */}
-          <DropdownMenuItem>
-            Settings
-            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+          <DropdownMenuItem asChild>
+            <Link href="/admin/settings">Settings</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>My Team</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
-          Log out
-          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

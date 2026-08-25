@@ -17,12 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-import type {
-  ImportResult,
-  SyncCounts,
-  SyncEvent,
-  SyncLogLevel,
-} from "../types";
+import { SyncTerminal, type LogLine } from "./SyncTerminal";
+
+import type { ImportResult, SyncCounts, SyncEvent } from "../types";
 
 /** Result of a destructive "clear all" action. */
 export type ClearResult = { ok: boolean; message: string };
@@ -47,7 +44,6 @@ interface SyncPanelProps {
   onClearAll?: () => Promise<ClearResult>;
 }
 
-type LogLine = { level: SyncLogLevel; message: string };
 type Progress = { imported: number; failed: number; total: number };
 
 function CountCard({
@@ -93,61 +89,6 @@ function CountCard({
         ) : null}
       </CardContent>
     </Card>
-  );
-}
-
-const LOG_COLORS: Record<SyncLogLevel, string> = {
-  info: "text-zinc-300",
-  success: "text-emerald-400",
-  warn: "text-amber-400",
-  error: "text-red-400",
-};
-
-/** A macOS-style terminal window streaming the import log. */
-function TerminalLog({
-  entityLabel,
-  logs,
-}: {
-  entityLabel: string;
-  logs: LogLine[];
-}) {
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  // Keep the newest line in view as logs stream in.
-  React.useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [logs]);
-
-  return (
-    <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-sm">
-      <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-3 py-2">
-        <span className="size-3 rounded-full bg-red-500/80" />
-        <span className="size-3 rounded-full bg-amber-500/80" />
-        <span className="size-3 rounded-full bg-emerald-500/80" />
-        <span className="ml-2 font-mono text-xs text-zinc-400">
-          import {entityLabel}
-        </span>
-      </div>
-      <div
-        ref={scrollRef}
-        className="h-64 overflow-auto p-3 font-mono text-xs leading-relaxed"
-      >
-        {logs.length === 0 ? (
-          <span className="text-zinc-500">Waiting for output…</span>
-        ) : (
-          logs.map((line, idx) => (
-            <div
-              key={idx}
-              className={cn("whitespace-pre-wrap break-words", LOG_COLORS[line.level])}
-            >
-              <span className="select-none text-zinc-600">$ </span>
-              {line.message}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -495,7 +436,7 @@ export function SyncPanel({
               </Button>
             ) : null}
           </div>
-          <TerminalLog entityLabel={entityLabel} logs={logs} />
+          <SyncTerminal title={`import ${entityLabel}`} logs={logs} />
         </div>
       ) : null}
 

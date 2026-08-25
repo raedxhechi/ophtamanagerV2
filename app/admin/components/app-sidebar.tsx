@@ -31,11 +31,6 @@ import {
 import Link from "next/link";
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -77,17 +72,17 @@ const data = {
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/admin/settings",
       icon: IconSettings,
     },
     {
       title: "Get Help",
-      url: "#",
+      url: "/admin/help",
       icon: IconHelp,
     },
     {
       title: "Search",
-      url: "#",
+      url: "/admin/search",
       icon: IconSearch,
     },
   ],
@@ -120,7 +115,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );

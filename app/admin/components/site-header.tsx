@@ -1,9 +1,12 @@
 "use client";
 
 import { Fragment } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { IconStethoscope } from "@tabler/icons-react";
 
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -58,10 +61,19 @@ export function SiteHeader() {
           <div className="rheal-logo-mark overflow-hidden size-8 min-w-8 min-h-8 shrink-0">
             {/* <RhealMark size={32} /> */}
           </div>
-          <span className="rheal-wordmark truncate">ophtamanager</span>
+          <span className="rheal-wordmark truncate">ophthamanager</span>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* The way back into the practice app, mirroring the Admin button
+              that brings you here from its header. /patients rather than /:
+              there is no root page, and proxy.ts redirects it here anyway. */}
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link href="/patients">
+              <IconStethoscope className="size-4" />
+              <span className="hidden sm:inline">Go to app</span>
+            </Link>
+          </Button>
           <UserNav />
         </div>
       </div>

@@ -81,10 +81,21 @@ created by an admin on **`/admin/users`** (or from the Supabase dashboard —
   PKCE, whose code verifier only exists in the original browser.
   **`/auth/callback`** handles that PKCE case anyway, as a fallback for the day
   someone resets a template in the dashboard.
+- **Emailed links live 72 hours** (`otp_expiry = 259200`). That single setting is
+  the lifetime of every auth link — invitation, password reset, magic link —
+  because GoTrue has no separate invite expiry, so the three days apply to all
+  three templates and each one says so in its own copy. The dashboard refuses
+  anything above 86400; the Management API does not, and `config push` goes
+  through the Management API — so `config.toml` is the only place the value
+  survives. A change made in the dashboard alone is overwritten by the next
+  push, which is exactly how the repo and the project drifted apart once.
 - The templates live in `supabase/templates/*.html` and are wired up in
   `config.toml` under `[auth.email.template.*]`. They build their links from
   `{{ .SiteURL }}`, so **`site_url` has to be the deployed app** or every emailed
-  link points at localhost. All three share one card layout — table-based with
+  link points at localhost. That address is **ophthamanager.de** — with the `h`,
+  as in ophthalmology. The h-less `ophtamanager.de` and `v2.ophtamanager.de`
+  are still owned and still listed in `additional_redirect_urls`, so links
+  emailed before the move keep landing. All three share one card layout — table-based with
   inline styles, German first and English under a rule, and a plain-text copy of
   the link for clients that swallow the button.
 - **Every emailed link is valid for 72 hours** (`otp_expiry = 259200` under
@@ -96,16 +107,19 @@ created by an admin on **`/admin/users`** (or from the Supabase dashboard —
   Advisor flags the value. Only a `supabase config push` can set it: the
   dashboard's own field caps at 86400 and would quietly halve it.
 - Mail goes out through **Resend** (`[auth.email.smtp]`), from
-  noreply@ophtamanager.de. The API key is never in the repo: `env(RESEND_API_KEY)`
+  noreply@ophtamanager.de — the h-less spelling, deliberately: that is the
+  domain verified in Resend, and a from-address does not have to match
+  `site_url`. Moving it means verifying ophthamanager.de there first, or mail
+  stops being delivered. The API key is never in the repo: `env(RESEND_API_KEY)`
   is substituted by the CLI at `supabase config push` time. Supabase's built-in
   sender is capped at 2 emails/hour and the platform refuses a higher
   `email_sent` rate limit until custom SMTP is set, so SMTP and the 100/hour
   limit have to land in the same push.
 - The logo in those emails is served by `app/email-logo.png/route.ts`, which
-  holds the bytes inline rather than sitting in `public/`. The two hosts disagree
+  holds the bytes inline rather than sitting in `public/`. The hosts disagree
   about that directory — v2.ophtamanager.de serves it, the apex 404s every file
   in it — and an emailed image has to resolve for a stranger's mail client, so it
-  goes through a route that answers on both. `public/logo.svg` is the vector
+  goes through a route that answers on any of them. `public/logo.svg` is the vector
   master it was rasterised from.
 - `proxy.ts` names the routes that answer without a session: `/login`,
   `/forgot-password`, `/auth/confirm`, `/auth/callback`. `/update-password` and
@@ -141,10 +155,34 @@ record of what those accounts may do.
   lists it as **No profile**, and opening it finishes the job. The edit drawer
   upserts for exactly this reason — it is also how an account created straight
   from the Supabase dashboard gets its row.
+- **Resending an invitation** is a row action on every account that has never
+  signed in, and the same button sits in the drawer. It calls
+  `inviteUserByEmail` again, which GoTrue allows only while the address is
+  unconfirmed — exactly the accounts that never accepted — and which issues a
+  fresh token, so the link already in their inbox stops working. A confirmed
+  account comes back as `email_exists`; the action turns that into "send a
+  password reset instead" rather than repeating GoTrue's wording. `invited_at`
+  is on the row for the same reason: it says how old the link they are holding
+  is. See "Auth" above for how long that link lasts.
 - **Role and office are the whole point of the form.** An admin reaches every
   office and needs none of their own; for everyone else the office *is* their
   access, so it is required. An admin cannot drop their own admin role — that
   would close the screen behind them.
+- **A manager gets a set of offices, not one.** Picking `manager` swaps the
+  office select for a checkbox list (`OfficeAccessField`), which submits
+  repeated `doctor_office_ids` and writes `public.user_office_access` — see
+  "Multi-office access" below for the two concepts. `user_data.doctor_office_id`
+  is still written, as the *active* office: kept as it was while it is still in
+  the set, moved to the first of the set only when the office it points at is
+  taken away. The order both halves agree on is the office list's own, by name.
+  The access set is written **after** the `user_data` row, never before: that
+  write fires `user_data_sync_office_access()`, which for a non-manager deletes
+  every row but the active office — so the trigger collapses a demoted manager
+  on its own, and inserting first would just feed it rows to throw away. For a
+  manager the trigger only ever *adds*, which is why revoking an office has to
+  be done explicitly by `syncOfficeAccess()` in `actions.ts`. The table names
+  the active office with a `+n` badge for the rest, and filtering by an office
+  matches anyone whose set holds it, not just those active in it.
 - **Deleting** a user runs `public.delete_app_user()` (one transaction, admin
   check inside) and then `auth.admin.deleteUser()`. Every FK into `user_data` is
   ON DELETE RESTRICT, so the function decides what happens to each: table
@@ -159,6 +197,197 @@ record of what those accounts may do.
   every account in the app (a few dozen), not a page out of thousands. The role
   select is driven by `Constants.public.Enums.user_role` in `types/supabase.ts`,
   so a role added by a migration appears as soon as the types are regenerated.
+
+## The signed-in user on the client
+
+`zustand/user` holds who is signed in — the auth `user`, their `user_data` row
+with the active office joined in, and their `user_settings` row. The admin
+layout (`app/admin/layout.tsx`) reads all three server-side and hands them to
+`UserStoreProvider`; `user-nav.tsx` and `nav-user.tsx` read them back out, so
+the header menu and the sidebar menu cannot disagree about who is signed in.
+
+- **A store per provider, not a module singleton.** The values come from a
+  server component that re-runs per request, and one store shared across every
+  request the same Node process serves would leak one user's row to the next.
+- **Seeded on every server render, not just the first.** The store is created
+  once, so the provider re-hydrates it whenever the props change — a reload, or
+  a `router.refresh()` after a save. The comparison is a JSON snapshot because
+  each server render deserialises fresh objects, so identities always differ.
+- **The settings copy is a snapshot, not the live value.** Tables take their
+  column order and visibility from `useMyUserSettings`
+  (`react-query/userSettings.tsx`), which is what the debounced save writes back
+  into — that stays the live copy. The provider primes that query's cache from
+  the row the server read, so the first table to mount doesn't refetch a row
+  that arrived with the page, and the store and the cache start out agreeing.
+  Priming happens on the way in only: doing it again on a later hydration could
+  overwrite the cache from a server read older than an unsaved column change
+  still sitting in the 600 ms save debounce.
+- Only `/admin` has a provider. The private area passes `userData` down from its
+  own layout as props and needs no store; `useUserStore` throws outside one
+  rather than handing back an empty user.
+- `lib/user.ts` holds the name and initials fallbacks all three user menus
+  share: the profile's first/last name first (what an admin sets on
+  `/admin/users`), then the auth metadata an invitation carries, then the
+  email's local part.
+
+## Order status
+
+`orders.status` is a nullable `order_status` enum — pending → processing →
+ready → delivered — defaulting to `pending` on insert.
+
+- **Nullable is load-bearing.** The column was added bare and given its default
+  afterwards, so orders that predate it stayed null rather than being backfilled
+  to `pending`: most of them are long since delivered, and a DDL default would
+  have made a claim about history nobody checked. Adopting them is a deliberate
+  backfill in its own migration, not a side effect.
+- **No new policy decides who may set it.** "Admins have full access to orders"
+  and "Managers can update orders in their offices" are the only UPDATE policies
+  on the table, so a doctor or assistant reads a status and can never write one.
+  `canEditOrderStatus()` in `lib/orders/status.ts` is the UI half of that same
+  answer — it picks a dropdown or a read-only badge, so nobody is offered a menu
+  whose every option the database would refuse.
+- The private list learns the role server-side (`getOfficeContext`) and passes a
+  flag through the table's `meta`, so `columns` stays a module constant —
+  `useTableSettings` keys its derived state off that identity, and rebuilding
+  the array each render would reset everyone's saved column layout. The admin
+  list is unconditionally editable: `proxy.ts` admits no one but admins.
+- The cell saves on pick — there is no form around a table cell — while the
+  admin drawer's status is an ordinary form field saved by its own button, so
+  it matches everything else in that drawer. Both go through RLS the same way,
+  reading the row back to tell a refusal from a no-op.
+- The column is visible by default in both tables and can be hidden from the
+  column selector like any other.
+
+## Multi-office access
+
+"The office a user belongs to" is two things, and the **manager** role is why.
+`20260811120100_create_user_office_access.sql` has the full reasoning; the short
+version:
+
+- `user_data.doctor_office_id` — the **active** office. The column default for
+  `orders.doctor_office_id` and `draft_orders.doctor_office_id`, the office the
+  patient forms write, and the one the site header shows.
+- `public.user_office_access` — the **access set**. Every office the user may
+  read and work in. `public.current_office_ids()` returns it, and every
+  office-scoped RLS policy compares against that array rather than against the
+  active office.
+
+For a doctor, assistant or pharmacist the set holds exactly that one office, and
+a trigger keeps it that way — so their experience is the single-office one it
+always was. For a manager it holds many, and the active office is a pointer
+within it. `public.set_active_office(uuid)` moves the pointer; it is an RPC
+rather than an UPDATE policy on `user_data`, because any policy letting users
+write their own row would let them write their own `role`.
+
+A manager also holds two grants a doctor does not: UPDATE and DELETE on the
+orders (and their suborders) of the offices they cover.
+
+**What is not built yet**: the manager's UPDATE and DELETE grants on orders have
+no UI, since order editing lives in `/admin/orders` behind `updateOrderAsAdmin`
+and `proxy.ts` keeps non-admins out of `/admin`.
+
+### The selected office
+
+An admin reaches every office and a manager reaches several, so the private area
+has to know *which* one they are working in. That is
+`user_settings.selected_doctor_office`, and `lib/office/context.ts` is the one
+place that resolves it.
+
+- `getOfficeContext()` returns the office being worked in, the offices that may
+  be switched to, and whether to offer the switcher at all. Wrapped in React's
+  `cache()`: the header and the page below it both need it and cannot pass it
+  between them, so every caller after the first in a request is free.
+- **One query lists the options for both roles**, because the RLS on
+  `doctor_office` already says the right thing — the admin policy returns every
+  office, and "Users can view their connected doctor office", widened to the
+  access set, returns a manager's. No role branch is needed.
+- **The stored value is a preference, never a grant.** It is re-checked against
+  those options on every read, so a selection the user may no longer reach (a
+  manager whose grant was revoked) is dropped rather than trusted.
+- **There is deliberately no fallback office.** An admin or manager who has
+  never chosen has `officeId: null`, and the lists skip their query entirely
+  rather than guessing. Falling back to "the first office" would put them in one
+  decided by alphabetical order, and every list they read and every patient they
+  create would quietly belong to it — worse than having none. The header shows
+  "Keine Praxis" and `OfficeSetupDialog` asks for a choice; the pages behind it
+  render `NoOfficeSelected`, and the two create pages refuse up front rather
+  than letting an insert fail the not-null constraint on a filled-in form.
+- A doctor, assistant or pharmacist never sees a picker: `canSwitchOffices()` is
+  false for them and the context is just the office on their profile, so their
+  `.eq("doctor_office_id", ...)` narrows to exactly what RLS was already giving
+  them. Nothing about their experience changes.
+- **Creates name the office explicitly** — the patient action, the order and the
+  parked draft. The `current_office_id()` column default is only right for
+  someone with a single office: it is null for an admin (a not-null violation)
+  and points at the profile's office rather than the selected one for a manager.
+  It is omitted, not nulled, when the caller genuinely doesn't know, so the
+  default still covers the single-office case.
+- Switching writes the column and calls `revalidatePath("/", "layout")`
+  (`SiteHeader/actions.ts`): every list in the private area is scoped to the
+  office, not just the page the switcher is sitting on, and the client-side
+  router cache is holding the others. The patient picker and the policy list are
+  TanStack queries keyed by office id, so they refetch on their own.
+- In the header, `EntitySheet` takes a `nameSlot` that replaces its label pill;
+  the office passes `OfficeSwitcher` into it for the two roles that may switch.
+  The info button and the details sheet are unchanged either way.
+
+The three office-scoped lists got composite indexes in the same migration —
+`(doctor_office_id, created_at desc, id desc)` on patients and orders,
+`(doctor_office_id, created_at desc)` on draft orders. They match the lists'
+`where … order by … limit` exactly, so a page is a range scan rather than a
+sort of the office's whole history, and the leading column still serves plain
+foreign-key lookups and the `= any (...)` RLS checks.
+
+## Directus sync
+
+`/admin/sync` copies the legacy Directus data into Supabase. The overview page
+shows a card per entity and one **Sync all** button; the per-entity pages
+(`/admin/sync/patients` and siblings) still exist and are still routable by
+hand, they just have no tab bar pointing at them any more — picking one out of
+order was the reliable way to end up with rows whose links point at nothing.
+
+- **The order is the dependency chain** and lives in one place, `all/steps.ts`:
+  doctor offices → insurance companies → medicines → insurance policies →
+  patients → orders & suborders. Out of order nothing fails loudly; it succeeds
+  with the links missing, and only a re-run repairs them. The cards are numbered
+  in that same order, so a card sitting at zero explains the empty ones under
+  it. That module is data only — no importers, no server imports — so the
+  browser can hold the same list the server dispatches on.
+- **One request per step, not one for the whole run.** The client walks
+  `SYNC_STEPS` and POSTs `/admin/sync/all/stream/<slug>` once per entity,
+  consuming each stream before starting the next. That is the loop a person used
+  to run by hand, and it is why there is no timeout to tune: each step gets its
+  own request clock instead of six entities sharing one, where the slow ones
+  (patients, orders) would be cut off partway through and the log would look
+  like a crash. `all/runners.ts` maps a slug to its importer.
+- **A failing step does not stop the run.** The steps are independent copies and
+  the ones after a failure are usually still worth doing — a medicine that could
+  not be copied costs a few order links, not the patients. What a step cannot do
+  is get skipped silently, so each one's outcome is logged either way, and the
+  running totals are accumulated client-side from each step's own result.
+- Orders are forwarded event by event rather than collapsed into a summary line:
+  that importer already streams, and its detailed account of a suborder whose
+  patient never made it across is the most useful output in the whole run.
+- **The log replaces the cards** while a sync runs. The counts behind it are
+  stale the moment it starts, and six numbers quietly lying is worse than not
+  showing them; dismissing the run brings them back, freshly read.
+- `SyncTerminal` scrolls the way a shell does: pinned to the newest line while
+  the view is at the bottom, released the moment you scroll up to read
+  something, re-pinned when you come back. A plain "scroll to bottom on every
+  line" effect — which is what it used to do — makes streaming output
+  unreadable. Both the full sync and the per-entity panels use it.
+
+### The insurance-policy link tables
+
+Directus keeps junction rows whose ends have been cleared: 135 of 253
+`insurancePolicies_medicines` rows have no policy, and 41 of 162 company links.
+Upserting those sent `insurance_policy_id: null` into a NOT NULL column — one
+reported error per row, while every real link imported fine, which is why the
+data looked intact and the run looked broken. `usableLinks()` now drops rows
+with a null end, drops rows pointing at a policy that no longer exists, and
+collapses duplicate pairs (9 and 7 of them), reporting each category once with a
+count instead of once per row. The surviving rows go up in one multi-row upsert
+per batch rather than 25 concurrent single-row upserts at the same primary key.
 
 ## Directus mirror
 

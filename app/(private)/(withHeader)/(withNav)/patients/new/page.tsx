@@ -1,9 +1,21 @@
 import { getTranslations } from "next-intl/server";
 
+import { NoOfficeSelected } from "@/components/no-office-selected";
+import { getOfficeContext } from "@/lib/office/context";
+
 import { NewPatientForm } from "./_components/NewPatientForm";
 
 export default async function NewPatientPage() {
   const t = await getTranslations("component.NewPatientForm");
+  const { officeId, canSwitch } = await getOfficeContext();
+
+  // Every patient belongs to an office, and createPatient refuses without one.
+  // Better to say so before the form is filled in than after it is submitted.
+  if (canSwitch && !officeId) {
+    return (
+      <NoOfficeSelected description="Pick a doctor office in the header before adding a patient — it decides which office the patient belongs to." />
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl p-6 lg:p-8">

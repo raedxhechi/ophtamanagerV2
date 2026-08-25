@@ -5,13 +5,16 @@ import { getTranslations } from "next-intl/server";
 import type { DetailRow } from "./EntitySheet";
 import type { UserDataWithOffice } from "@/types/user";
 
+import { getOfficeContext } from "@/lib/office/context";
 import { getPolicyImageUrl } from "@/lib/policyImage";
 import { createClient } from "@/supabase/server";
 
-import { AdminDashboardButton } from "./AdminDashboardButton";
+import { AdminButton } from "./AdminButton";
 import { EntitySheet } from "./EntitySheet";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
+import { OfficeSetupDialog } from "./OfficeSetupDialog";
+import { OfficeSwitcher } from "./OfficeSwitcher";
 import { UserNav } from "./UserNav";
 
 // Pharmacy has no entity in the schema yet — still dummy data.
@@ -28,7 +31,11 @@ interface SiteHeaderProps {
 
 export async function SiteHeader({ user, userData }: SiteHeaderProps) {
   const t = await getTranslations("header");
-  const office = userData?.doctor_office;
+
+  // The office being worked in, which for an admin or a manager is the one they
+  // picked rather than the one on their profile. Cached per request, so the
+  // page rendering below this header shares the same read.
+  const { office, options, canSwitch } = await getOfficeContext();
 
   const doctorOfficeRows: DetailRow[] = [
     { label: t("fields.name"), value: office?.name ?? "—" },
@@ -56,13 +63,25 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
         <div className="flex items-center gap-4">
           <Logo />
           {userData?.role === "admin" ? (
-            <AdminDashboardButton label={t("adminDashboard")} />
+            <AdminButton label={t("admin")} />
           ) : null}
         </div>
 
-        {/* 2. Doctor office — info button opens a details sidebar */}
+        {/* 2. Doctor office — info button opens a details sidebar, and for an
+               admin or a manager the label itself switches office */}
         <EntitySheet
           name={office?.name ?? t("noOffice")}
+          nameSlot={
+            canSwitch ? (
+              <OfficeSwitcher
+                options={options.map(({ id, name }) => ({ id, name }))}
+                selectedId={office?.id ?? null}
+                icon={<Building2 className="size-4" />}
+                label={t("switchOffice")}
+                emptyLabel={t("noOffice")}
+              />
+            ) : undefined
+          }
           icon={<Building2 className="size-4" />}
           title={t("doctorOffice")}
           description={t("doctorOfficeDetails")}
@@ -89,6 +108,11 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
           <UserNav user={user} role={userData?.role ?? null} />
         </div>
       </div>
+
+      {/* First run: an admin or manager who has never picked an office sees
+          empty lists everywhere, because the app has no way to know which
+          office they mean. Ask, rather than choose one for them. */}
+      {canSwitch && !office ? <OfficeSetupDialog options={options} /> : null}
     </header>
   );
 }

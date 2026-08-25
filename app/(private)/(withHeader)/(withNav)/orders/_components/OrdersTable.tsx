@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { Button } from "@/components/ui/button";
 import { ColumnSelector } from "@/components/table/ColumnSelector";
+import { OrderStatusCell } from "@/components/orders/OrderStatusCell";
 import { TableSkeleton } from "@/components/table/TableSkeleton";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,6 +44,13 @@ import { useEffect } from "react";
 // The order rows this table renders: an order with its medicine and its
 // suborders (each carrying its patient). See OrderWithSubOrders in types/orders.
 export type OrderRow = OrderWithSubOrders;
+
+/**
+ * Passed through the table rather than closed over, so `columns` can stay a
+ * module constant — useTableSettings keys its derived state off that identity,
+ * and rebuilding the array each render would reset the saved column layout.
+ */
+type OrdersTableMeta = { canEditStatus: boolean };
 
 /** "application_date" -> "Application date" for the column-visibility menu. */
 function prettify(id: string): string {
@@ -82,6 +90,17 @@ const columns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => orDash(formatDate(row.original.delivery_date) || null),
   },
   {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row, table }) => (
+      <OrderStatusCell
+        orderId={row.original.id}
+        status={row.original.status}
+        editable={(table.options.meta as OrdersTableMeta).canEditStatus}
+      />
+    ),
+  },
+  {
     accessorKey: "created_at",
     header: "Created",
     cell: ({ row }) => orDash(formatDateTime(row.original.created_at) || null),
@@ -107,6 +126,7 @@ export function OrdersTable({
   totalCount,
   pageSize,
   search,
+  canEditStatus,
 }: {
   data: OrderRow[];
   /** 1-based index of the currently loaded page. */
@@ -119,6 +139,11 @@ export function OrdersTable({
   pageSize: number;
   /** The active server-side search, mirrored from the `q` search param. */
   search: string;
+  /**
+   * Whether the status cell is a dropdown or a read-only badge — true for an
+   * admin or a manager, who are the only roles RLS lets update an order.
+   */
+  canEditStatus: boolean;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -181,6 +206,7 @@ export function OrdersTable({
   const table = useReactTable({
     data,
     columns,
+    meta: { canEditStatus } satisfies OrdersTableMeta,
     state: { sorting, ...columnSettings },
     getRowId: (row) => row.id,
     onSortingChange: setSorting,

@@ -1,39 +1,29 @@
-'use client'
+import { NoOfficeSelected } from "@/components/no-office-selected";
+import { getOfficeContext } from "@/lib/office/context";
 
-import { Loader2 } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { NewOrderForm } from "./_components/NewOrderForm";
 
-import { Card } from '@/components/ui/card'
-import { useGetDraftOrder } from '@/react-query/draftOrders'
-import { CreateOrderForm } from './_components/CreateOrderForm/CreateOrderForm'
+/**
+ * A server shell around the create-order form, for one reason: the office being
+ * worked in is a server read, and the form needs it before it fetches anything.
+ * It scopes the patient picker and the insurance policies, and it is the office
+ * the order lands in.
+ */
+export default async function NewOrderPage() {
+  const { officeId, canSwitch } = await getOfficeContext();
 
-export default function NewOrderPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const draftId = searchParams.get('draft')
-
-  const { data: draftOrder, isLoading } = useGetDraftOrder(draftId)
-
-  // The form prefills its default values from the draft on mount, so wait for
-  // the draft to load before rendering it.
-  if (draftId && isLoading) {
+  // An admin or manager who has not picked an office cannot create here: they
+  // have no office of their own for the column default to fall back on, so the
+  // insert would fail the not-null constraint after the whole form was filled
+  // in. Ask first — the header dialog is already asking.
+  if (canSwitch && !officeId) {
     return (
-      <div className='flex justify-center items-center h-[60vh]'>
-        <Loader2 size={50} className='animate-spin' />
-      </div>
-    )
+      <NoOfficeSelected description="Pick a doctor office in the header before creating an order — it decides which office the order belongs to." />
+    );
   }
 
-  return (
-    <div className='px-4 py-6'>
-      <Card className='mx-auto flex w-full max-w-[1100px] flex-col bg-[oklch(1_0_0)] p-6'>
-        <CreateOrderForm
-          onFinish={() => router.push('/orders')}
-          onDraftFinish={() => router.push('/draft-orders')}
-          type={draftId ? 'draft' : 'new'}
-          draftOrder={draftOrder}
-        />
-      </Card>
-    </div>
-  )
+  // Undefined rather than null for a single-office user, so the form's "office
+  // unknown, let the column default decide" path is the one that runs — which
+  // is what they have always relied on.
+  return <NewOrderForm doctorOfficeId={officeId ?? undefined} />;
 }

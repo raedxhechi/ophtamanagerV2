@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { mirrorPatientToDirectus } from "@/directus/mirror";
+import { getOfficeContext } from "@/lib/office/context";
 import { createClient } from "@/supabase/server";
 import type { Database } from "@/types/supabase";
 
@@ -35,14 +36,11 @@ export async function createPatient(
     redirect("/login");
   }
 
-  // The patient must be scoped to the current user's office (enforced by RLS).
-  const { data: profile } = await supabase
-    .from("user_data")
-    .select("doctor_office_id")
-    .eq("id", user.id)
-    .single();
-
-  const officeId = profile?.doctor_office_id;
+  // The patient is created in the office being worked in — the profile's own
+  // office for a doctor or assistant, and for an admin or a manager the one
+  // they picked in the header. RLS enforces that it is an office they may write
+  // to; this decides which of them it is.
+  const { officeId } = await getOfficeContext();
   if (!officeId) {
     return { error: t("noOffice") };
   }

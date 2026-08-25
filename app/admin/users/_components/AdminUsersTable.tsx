@@ -26,6 +26,7 @@ import { OfficeFilter, type OfficeOption } from "../../_components/OfficeFilter"
 import type { AdminUserRow, UserStatus } from "./AdminUsersData";
 import { AdminUserDrawer } from "./AdminUserDrawer";
 import { InviteUserDrawer } from "./InviteUserDrawer";
+import { canResendInvite, ResendInviteButton } from "./ResendInviteButton";
 
 function orDash(value: string | null): React.ReactNode {
   return value ? value : <span className="text-muted-foreground">—</span>;
@@ -76,9 +77,33 @@ const columns: ColumnDef<AdminUserRow>[] = [
   },
   {
     id: "doctor_office",
+    // Sorted and searched on the active office: it is the one every account
+    // has, and the only one for everybody but a manager.
     accessorFn: (row) => row.doctor_office?.name ?? "",
     header: "Doctor office",
-    cell: ({ row }) => orDash(row.original.doctor_office?.name ?? null),
+    cell: ({ row }) => {
+      const { doctor_office, offices } = row.original;
+      // A manager covers several. Naming the active one and counting the rest
+      // keeps the column one line wide; the drawer lists them all.
+      const extra = offices.filter(
+        (office) => office.id !== doctor_office?.id
+      ).length;
+
+      return (
+        <div className="flex items-center gap-2">
+          {orDash(doctor_office?.name ?? null)}
+          {extra > 0 ? (
+            <Badge
+              variant="secondary"
+              className="shrink-0"
+              title={offices.map((office) => office.name ?? "Unnamed office").join(", ")}
+            >
+              +{extra}
+            </Badge>
+          ) : null}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "status",
@@ -98,6 +123,23 @@ const columns: ColumnDef<AdminUserRow>[] = [
     accessorKey: "last_sign_in_at",
     header: "Last sign-in",
     cell: ({ row }) => orDash(formatDate(row.original.last_sign_in_at) || null),
+  },
+  {
+    id: "actions",
+    header: "",
+    enableSorting: false,
+    // Only the accounts still sitting on an invitation get anything here, so
+    // the column reads as a to-do list: every button in it is someone who
+    // hasn't made it in yet.
+    cell: ({ row }) =>
+      canResendInvite(row.original.status) ? (
+        <div className="flex justify-end">
+          <ResendInviteButton
+            userId={row.original.id}
+            status={row.original.status}
+          />
+        </div>
+      ) : null,
   },
 ];
 
@@ -124,7 +166,16 @@ export function AdminUsersTable({
   const rows = React.useMemo(() => {
     const needle = search.trim().toLowerCase();
     return data.filter((user) => {
-      if (office && user.doctor_office?.id !== office) return false;
+      // Match on the whole access set, not just the active office — the point
+      // of filtering by an office is finding everyone who works in it, and a
+      // manager covering it is only "active" in one of theirs at a time.
+      if (
+        office &&
+        user.doctor_office?.id !== office &&
+        !user.offices.some((held) => held.id === office)
+      ) {
+        return false;
+      }
       if (!needle) return true;
       return [user.first_name, user.last_name, user.email]
         .filter(Boolean)
