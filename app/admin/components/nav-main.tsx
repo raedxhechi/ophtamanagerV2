@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type Icon } from "@tabler/icons-react";
 
+import { isActive } from "./nav-active";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -23,16 +24,6 @@ import {
  */
 const ACTIVE_ITEM =
   "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary/90 data-[active=true]:hover:text-primary-foreground data-[active=true]:active:bg-primary/90 data-[active=true]:active:text-primary-foreground";
-
-/**
- * Whether a nav item points at the page being shown. Section links also match
- * their subpages (/admin/orders covers an order's detail view); the dashboard
- * is matched exactly, since /admin is a prefix of every other item.
- */
-function isActive(pathname: string, url: string): boolean {
-  if (url === "/admin") return pathname === "/admin";
-  return pathname === url || pathname.startsWith(`${url}/`);
-}
 
 export function NavMain({
   items,
