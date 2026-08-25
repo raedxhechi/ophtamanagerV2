@@ -1,4 +1,7 @@
 import type { OrderWithSubOrders } from "@/types";
+import { canEditOrderStatus } from "@/lib/orders/status";
+import { NoOfficeSelected } from "@/components/no-office-selected";
+import { getOfficeContext } from "@/lib/office/context";
 import { createClient } from "@/supabase/server";
 
 import { OrdersTable } from "./OrdersTable";
@@ -27,11 +30,21 @@ export async function OrdersData({
   search: string;
 }) {
   const supabase = await createClient();
+  const { officeId, role } = await getOfficeContext();
+
+  // An admin or manager who has not picked an office yet. The query is skipped
+  // entirely rather than run on a null office: saying so beats an empty table
+  // that reads as an office with no orders.
+  if (!officeId) {
+    return <NoOfficeSelected what="orders" />;
+  }
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  // RLS scopes this to the current user's office automatically. `count: exact`
+  // Scoped to the office being worked in — the one picked in the header for an
+  // admin or a manager — on top of what RLS already allows, and served by
+  // orders_office_created_idx. `count: exact`
   // returns the office's (filtered) order count so the page count can be
   // derived. Search is server-side: each whitespace-separated token must appear
   // in the order's `search_text` (ANDed), so results span all pages, not just
@@ -40,6 +53,7 @@ export async function OrdersData({
   let query = supabase
     .from("orders")
     .select(ORDERS_SELECT, { count: "exact" })
+    .eq("doctor_office_id", officeId)
     .order("created_at", { ascending: false })
     // Stable tiebreaker so orders with an identical created_at keep a fixed
     // order and never shuffle between pages.
@@ -72,6 +86,9 @@ export async function OrdersData({
       totalCount={totalCount}
       pageSize={PAGE_SIZE}
       search={search}
+      // Decided on the server, where the role is already known — the private
+      // area has no user store to read it from on the client.
+      canEditStatus={canEditOrderStatus(role)}
     />
   );
 }

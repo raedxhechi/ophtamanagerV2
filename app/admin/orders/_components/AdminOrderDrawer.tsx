@@ -5,6 +5,11 @@ import { useActionState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { formatDate } from "@/lib/date";
+import {
+  NO_ORDER_STATUS,
+  ORDER_STATUSES,
+  ORDER_STATUS_LABELS,
+} from "@/lib/orders/status";
 import { useListMedicines } from "@/react-query/medicines";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -245,6 +250,32 @@ export function AdminOrderDrawer({
                     type="date"
                     defaultValue={toDateInputValue(order.delivery_date)}
                   />
+                </div>
+
+                {/* A form field rather than the list's save-on-pick cell:
+                    everything else in this drawer is saved by the button
+                    below, and one control that committed on its own would be
+                    the odd one out. */}
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    name="status"
+                    defaultValue={order.status ?? NO_ORDER_STATUS}
+                  >
+                    <SelectTrigger id="status" className="w-full">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Only reachable for an order that predates the column;
+                          nothing sets a status back to none on purpose. */}
+                      <SelectItem value={NO_ORDER_STATUS}>—</SelectItem>
+                      {ORDER_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {ORDER_STATUS_LABELS[status]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </section>
 

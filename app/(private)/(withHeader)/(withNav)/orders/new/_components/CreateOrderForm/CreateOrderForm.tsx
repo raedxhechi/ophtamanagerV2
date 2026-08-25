@@ -31,11 +31,16 @@ export interface CreateOrderFormProps {
   type: 'new' | 'draft'
   draftOrder?: DraftOrder
   /**
-   * Which office the order is for. Office users leave this unset — RLS scopes
-   * them to their own office and the DB fills the column in. An admin has no
-   * office of their own, so `/admin/orders` names one explicitly: it scopes the
-   * patient picker and the policies that decide medicine coverage, and it fills
-   * the order's `doctor_office_id`.
+   * Which office the order is for. It scopes the patient picker and the
+   * policies that decide medicine coverage, and it fills the order's (and the
+   * draft's) `doctor_office_id`.
+   *
+   * Left unset only where the caller genuinely has no idea — RLS scopes a
+   * single-office user to their own office and the DB default fills the column
+   * in. Everywhere it is known it is passed: `/admin/orders` names the office
+   * it is creating on behalf of, and `/orders/new` passes the office the user
+   * is working in, which for an admin or a manager is the one they picked in
+   * the header and for everyone else is simply their own.
    */
   doctorOfficeId?: string
   /**
@@ -156,6 +161,9 @@ export const CreateOrderForm = ({
       application_date: data.applicationDate ? format(data.applicationDate, 'yyyy-MM-dd') : null,
       delivery_date: data.deliveryDate ? format(data.deliveryDate, 'yyyy-MM-dd') : null,
       medicine_id: data.medicine || null,
+      // Same rule as the order below: omitted rather than nulled, so a user
+      // with a single office still gets the column default.
+      ...(doctorOfficeId ? { doctor_office_id: doctorOfficeId } : {}),
       quantity: data.subOrders.reduce((count, patient) => {
         return count + (patient.leftEye ? 1 : 0) + (patient.rightEye ? 1 : 0)
       }, 0),
@@ -188,7 +196,7 @@ export const CreateOrderForm = ({
       application_date: format(data.applicationDate, 'yyyy-MM-dd'),
       delivery_date: format(data.deliveryDate, 'yyyy-MM-dd'),
       medicine_id: data.medicine,
-      // Left out for office users so the column default (current_office_id())
+      // Left out when unknown so the column default (current_office_id())
       // still applies.
       ...(doctorOfficeId ? { doctor_office_id: doctorOfficeId } : {}),
       quantity: data.subOrders.reduce((count, patient) => {

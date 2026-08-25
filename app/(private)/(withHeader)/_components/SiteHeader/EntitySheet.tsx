@@ -22,6 +22,14 @@ export type DetailRow = {
   value: string;
 };
 
+/**
+ * The header's name pill. Exported so a component that replaces it — the office
+ * switcher, which turns it into a dropdown trigger — sits at exactly the same
+ * size and weight as the plain label beside it.
+ */
+export const HEADER_PILL_CLASS =
+  "flex h-10 max-w-[11rem] items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md sm:max-w-[15rem]";
+
 export type EntityImage = {
   /** Signed, short-lived URL — minted per render by the server component. */
   url: string;
@@ -39,6 +47,12 @@ interface EntitySheetProps {
   rows: DetailRow[];
   /** Optional picture shown under the rows (the office's policy image). */
   image?: EntityImage | null;
+  /**
+   * Replaces the plain name pill. The doctor office passes the switcher here
+   * for the users who may change office; everyone else gets the label. The
+   * info button, and the sheet behind it, are the same either way.
+   */
+  nameSlot?: ReactNode;
 }
 
 /**
@@ -53,16 +67,19 @@ export function EntitySheet({
   description,
   rows,
   image,
+  nameSlot,
 }: EntitySheetProps) {
   const infoLabel = description ?? title;
 
   return (
     <Sheet>
       <div className="flex min-w-0 items-center gap-1.5">
-        <div className="flex h-10 max-w-[11rem] items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md sm:max-w-[15rem]">
-          <span className="shrink-0 text-white/80">{icon}</span>
-          <span className="truncate">{name}</span>
-        </div>
+        {nameSlot ?? (
+          <div className={HEADER_PILL_CLASS}>
+            <span className="shrink-0 text-white/80">{icon}</span>
+            <span className="truncate">{name}</span>
+          </div>
+        )}
 
         <SheetTrigger asChild>
           <Button

@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/supabase/server";
 import type { Database } from "@/types/supabase";
 
+import { NO_ORDER_STATUS, parseOrderStatus } from "@/lib/orders/status";
+
 import { NO_INVOICE_TYPE } from "./_components/invoiceType";
 
 type InvoiceType = Database["public"]["Enums"]["invoice_types"];
@@ -81,6 +83,16 @@ export async function updateOrderAsAdmin(
   const deliveryDate = dateField(formData, "delivery_date");
   if ("error" in deliveryDate) return deliveryDate;
 
+  // The column is nullable for orders that predate it, so the select carries a
+  // sentinel for "none" — an unrecognised value is a bad request rather than a
+  // silent fallback to null, which would quietly clear a status.
+  const rawStatus = field(formData, "status");
+  const status =
+    rawStatus === NO_ORDER_STATUS ? null : parseOrderStatus(rawStatus);
+  if (rawStatus !== NO_ORDER_STATUS && rawStatus !== null && !status) {
+    return { error: `"${rawStatus}" is not an order status.` };
+  }
+
   const { error } = await supabase
     .from("orders")
     .update({
@@ -88,6 +100,7 @@ export async function updateOrderAsAdmin(
       quantity,
       application_date: applicationDate.value,
       delivery_date: deliveryDate.value,
+      status,
     })
     .eq("id", id);
 

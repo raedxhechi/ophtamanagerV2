@@ -72,8 +72,13 @@ const insertDraftSubOrders = async (
   if (error) throw error
 }
 
-// `doctor_office_id` and `created_by` are filled by the DB defaults
-// (current_office_id() / auth.uid()), so they aren't set here.
+// `created_by` is filled by the DB default (auth.uid()), so it isn't set here.
+// `doctor_office_id` has the default current_office_id(), which is only right
+// for a user with a single office: an admin has none of their own and would
+// fail the not-null constraint, and a manager's would be whichever office their
+// profile points at rather than the one they are working in. So it is passed
+// whenever the caller knows it, and omitted — not sent as null — when not, so
+// the default still applies.
 export const createDraftOrder = async (data: CreateDraftOrderInput) => {
   const { subOrders = [], ...draft } = data
 
@@ -84,6 +89,9 @@ export const createDraftOrder = async (data: CreateDraftOrderInput) => {
       quantity: draft.quantity ?? null,
       application_date: toDateOnly(draft.application_date),
       delivery_date: toDateOnly(draft.delivery_date),
+      ...(draft.doctor_office_id
+        ? { doctor_office_id: draft.doctor_office_id }
+        : {}),
     })
     .select()
     .single()

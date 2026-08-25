@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 
 /**
- * The Ophtamanager mark, served as a PNG for the auth email templates.
+ * The Ophthamanager mark, served as a PNG for the auth email templates.
  *
  * Two reasons it lives here as bytes rather than in `public/`:
  *
  * 1. Email clients strip SVG — Gmail and Outlook both — so the templates need a
  *    raster, and they also strip `data:` URIs, so it has to be a real URL.
- * 2. The two hosts disagree about `public/`: v2.ophtamanager.de serves it, the
- *    apex answers 404 for every file in it. A route answers on both, so an
+ * 2. The hosts disagree about `public/`: v2.ophtamanager.de serves it, the
+ *    apex answers 404 for every file in it. A route answers on any of them, so an
  *    emailed `{ .SiteURL }/email-logo.png` resolves whichever one site_url
  *    happens to point at.
  *

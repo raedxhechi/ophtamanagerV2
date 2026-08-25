@@ -1,11 +1,15 @@
 {
   "header": {
-    "adminDashboard": "Dashboard",
+    "admin": "Admin",
     "doctorOffice": "Arztpraxis",
     "doctorOfficeDetails": "Praxisdaten",
     "pharmacy": "Apotheke",
     "pharmacyDetails": "Apothekendaten",
     "noOffice": "Keine Praxis",
+    "switchOffice": "Praxis wechseln",
+    "selectOfficeTitle": "Praxis auswählen",
+    "selectOfficeDescription": "Wählen Sie die Praxis, in der Sie arbeiten möchten. Patienten und Bestellungen werden für diese Praxis angezeigt und dort angelegt. Sie können jederzeit oben im Kopfbereich wechseln.",
+    "selectOfficeEmpty": "Ihnen ist noch keine Praxis zugewiesen. Bitte wenden Sie sich an einen Administrator.",
     "policyImage": "Versicherungsinformationen",
     "fields": {
       "name": "Name",
