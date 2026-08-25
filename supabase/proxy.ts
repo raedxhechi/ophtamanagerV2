@@ -2,6 +2,53 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from '@/types/supabase'
 import { createServerLoggingFetch } from '@/lib/logging/server'
+
+// ---------------------------------------------------------------------------
+// TEMPORARY: the admin dashboard is turned off on this branch.
+//
+// Admins are sent to the deployment that still serves them — from *any* route,
+// not just /admin, so this build is closed to them entirely. The path is
+// carried across (it is the same app on the other host, so a deep link still
+// lands where it was pointing) along with `?message=admin_redirected`, so the
+// other side can say why they moved: arriving on a different host with no
+// explanation reads as a bug or a lost session.
+//
+// A key rather than a sentence, following the `?error=<key>` convention the
+// auth handlers already use: the wording belongs to whoever renders it, in
+// whichever language that user is reading, and prose in a URL is neither
+// translatable nor changeable without redeploying this side.
+//
+// To undo: delete this block and the `ADMIN_DASHBOARD_DISABLED` branch below.
+// Nothing else in the app depends on either — the routes themselves are
+// untouched, only the proxy stops letting an admin through to them.
+// ---------------------------------------------------------------------------
+const ADMIN_DASHBOARD_DISABLED = true
+const ADMIN_DASHBOARD_URL = 'https://ophtamanager-v2-five.vercel.app'
+const ADMIN_DASHBOARD_MESSAGE_KEY = 'admin_redirected'
+
+/**
+ * Routes an admin still has to be able to reach here, even while the rest of
+ * this deployment is closed to them.
+ *
+ * The auth ones are not a courtesy: `/auth/confirm` and `/auth/callback` are
+ * what turn a token from an email into a session, and bouncing one to another
+ * host before it is verified burns the token and breaks the link for good. The
+ * password screens are reached from those same emails, whose links point at
+ * whatever `site_url` is set to — which may well be this deployment.
+ *
+ * `/api/` is excluded because a cross-origin 307 is not something a fetch()
+ * recovers from: the Directus mirror and the log ingest would fail quietly
+ * rather than redirect.
+ */
+const ADMIN_REDIRECT_EXEMPT = [
+    '/login',
+    '/forgot-password',
+    '/update-password',
+    '/accept-invite',
+    '/auth/',
+    '/api/',
+]
+
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
@@ -77,6 +124,47 @@ export async function updateSession(request: NextRequest) {
         return redirectResponse
     }
 
+    // Admins go to the other deployment, whatever they were reaching for.
+    //
+    // This costs one query per navigation for everybody, which is why the
+    // /admin gate below deliberately kept its own inside that branch. There is
+    // no cheaper way while it is on: the role lives in public.user_data and is
+    // not a JWT claim, so there is nothing on the request to read it from. That
+    // is a fair price for a temporary switch and a bad one for a permanent
+    // feature — if this outlives the branch, put the role in the token.
+    if (user && ADMIN_DASHBOARD_DISABLED) {
+        const exempt = ADMIN_REDIRECT_EXEMPT.some((prefix) => pathname.startsWith(prefix))
+
+        // Don't bounce a host at itself. If this branch is ever deployed to that
+        // same URL, an unguarded redirect would loop until the browser gives up
+        // — and the failure would only show up in production.
+        const sameHost = new URL(ADMIN_DASHBOARD_URL).hostname === request.nextUrl.hostname
+
+        if (!exempt && !sameHost) {
+            const { data: profile } = await supabase
+                .from('user_data')
+                .select('role')
+                .eq('id', user.sub)
+                .maybeSingle()
+
+            if (profile?.role === 'admin') {
+                const target = new URL(ADMIN_DASHBOARD_URL)
+                // Same app on the other host, so the path still means something
+                // there — a link to one order lands on that order.
+                target.pathname = pathname
+                target.search = request.nextUrl.search
+                target.searchParams.set('message', ADMIN_DASHBOARD_MESSAGE_KEY)
+
+                const redirectResponse = NextResponse.redirect(target)
+                // Carried over like every other redirect here: the session was
+                // just refreshed above, and dropping the new cookies would sign
+                // them out on the way past.
+                supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
+                return redirectResponse
+            }
+        }
+    }
+
     // There is no root page — send authenticated users to the patients list.
     if (pathname === '/') {
         const url = request.nextUrl.clone()
@@ -106,6 +194,7 @@ export async function updateSession(request: NextRequest) {
             supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
             return redirectResponse
         }
+
     }
 
     //==========================================
