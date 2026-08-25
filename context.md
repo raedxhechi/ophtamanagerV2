@@ -168,6 +168,21 @@ record of what those accounts may do.
   office and needs none of their own; for everyone else the office *is* their
   access, so it is required. An admin cannot drop their own admin role — that
   would close the screen behind them.
+- **A manager gets a set of offices, not one.** Picking `manager` swaps the
+  office select for a checkbox list (`OfficeAccessField`), which submits
+  repeated `doctor_office_ids` and writes `public.user_office_access` — see
+  "Multi-office access" below for the two concepts. `user_data.doctor_office_id`
+  is still written, as the *active* office: kept as it was while it is still in
+  the set, moved to the first of the set only when the office it points at is
+  taken away. The order both halves agree on is the office list's own, by name.
+  The access set is written **after** the `user_data` row, never before: that
+  write fires `user_data_sync_office_access()`, which for a non-manager deletes
+  every row but the active office — so the trigger collapses a demoted manager
+  on its own, and inserting first would just feed it rows to throw away. For a
+  manager the trigger only ever *adds*, which is why revoking an office has to
+  be done explicitly by `syncOfficeAccess()` in `actions.ts`. The table names
+  the active office with a `+n` badge for the rest, and filtering by an office
+  matches anyone whose set holds it, not just those active in it.
 - **Deleting** a user runs `public.delete_app_user()` (one transaction, admin
   check inside) and then `auth.admin.deleteUser()`. Every FK into `user_data` is
   ON DELETE RESTRICT, so the function decides what happens to each: table
@@ -182,6 +197,37 @@ record of what those accounts may do.
   every account in the app (a few dozen), not a page out of thousands. The role
   select is driven by `Constants.public.Enums.user_role` in `types/supabase.ts`,
   so a role added by a migration appears as soon as the types are regenerated.
+
+## Multi-office access
+
+"The office a user belongs to" is two things, and the **manager** role is why.
+`20260811120100_create_user_office_access.sql` has the full reasoning; the short
+version:
+
+- `user_data.doctor_office_id` — the **active** office. The column default for
+  `orders.doctor_office_id` and `draft_orders.doctor_office_id`, the office the
+  patient forms write, and the one the site header shows.
+- `public.user_office_access` — the **access set**. Every office the user may
+  read and work in. `public.current_office_ids()` returns it, and every
+  office-scoped RLS policy compares against that array rather than against the
+  active office.
+
+For a doctor, assistant or pharmacist the set holds exactly that one office, and
+a trigger keeps it that way — so their experience is the single-office one it
+always was. For a manager it holds many, and the active office is a pointer
+within it. `public.set_active_office(uuid)` moves the pointer; it is an RPC
+rather than an UPDATE policy on `user_data`, because any policy letting users
+write their own row would let them write their own `role`.
+
+A manager also holds two grants a doctor does not: UPDATE and DELETE on the
+orders (and their suborders) of the offices they cover.
+
+**What is not built yet**: nothing in the app calls `set_active_office`, so a
+manager cannot switch which office they create in; the patient and order lists
+merge every office they cover with no office column or filter; and the
+update/delete grants have no UI, since order editing lives in `/admin/orders`
+behind `updateOrderAsAdmin` and `proxy.ts` keeps non-admins out of `/admin`.
+Granting the offices (`/admin/users`) is the part that exists.
 
 ## Directus mirror
 

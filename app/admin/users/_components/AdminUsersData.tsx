@@ -22,7 +22,14 @@ export type AdminUserRow = {
   last_name: string | null;
   /** null when the account has no user_data row yet. */
   role: UserRole | null;
+  /** The active office — where this account's new patients and orders land. */
   doctor_office: { id: string; name: string | null } | null;
+  /**
+   * Every office the account may reach (public.user_office_access). Exactly one
+   * — the active office — for a doctor, assistant or pharmacist; several for a
+   * manager; none for an admin, who reaches every office regardless.
+   */
+  offices: OfficeOption[];
   status: UserStatus;
   created_at: string | null;
   last_sign_in_at: string | null;
@@ -63,13 +70,18 @@ export async function AdminUsersData() {
     );
   }
 
-  const [officesResult, profilesResult, authResult] = await Promise.all([
-    supabase.from("doctor_office").select("id, name").order("name"),
-    supabase
-      .from("user_data")
-      .select("*, doctor_office:doctor_office_id(id, name)"),
-    createAdminClient().auth.admin.listUsers({ page: 1, perPage: PER_PAGE }),
-  ]);
+  const [officesResult, profilesResult, accessResult, authResult] =
+    await Promise.all([
+      supabase.from("doctor_office").select("id, name").order("name"),
+      supabase
+        .from("user_data")
+        .select("*, doctor_office:doctor_office_id(id, name)"),
+      // The access set, flat: a manager covers several offices, and the drawer
+      // has to open on the ones they already hold. Every row is readable here —
+      // "Admins have full access to office access rows".
+      supabase.from("user_office_access").select("user_id, doctor_office_id"),
+      createAdminClient().auth.admin.listUsers({ page: 1, perPage: PER_PAGE }),
+    ]);
 
   if (authResult.error) {
     return (
@@ -87,10 +99,34 @@ export async function AdminUsersData() {
     );
   }
 
+  if (accessResult.error) {
+    return (
+      <p className="text-destructive text-sm">
+        Failed to load office access: {accessResult.error.message}
+      </p>
+    );
+  }
+
   const offices = (officesResult.data ?? []) as OfficeOption[];
   const profiles = new Map(
     (profilesResult.data ?? []).map((profile) => [profile.id, profile])
   );
+
+  // user_id -> the offices they may reach, resolved against the office list so
+  // the names come from one place, and in that list's order (by name) — which
+  // is the order the picker and the "keep the first" rule in ../actions.ts use.
+  const officesById = new Map(offices.map((office) => [office.id, office]));
+  const accessByUser = new Map<string, OfficeOption[]>();
+  for (const grant of accessResult.data ?? []) {
+    const office = officesById.get(grant.doctor_office_id);
+    if (!office) continue;
+    const held = accessByUser.get(grant.user_id);
+    if (held) held.push(office);
+    else accessByUser.set(grant.user_id, [office]);
+  }
+  for (const held of accessByUser.values()) {
+    held.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+  }
 
   const rows: AdminUserRow[] = authResult.data.users.map((user) => {
     const profile = profiles.get(user.id);
@@ -104,6 +140,7 @@ export async function AdminUsersData() {
       last_name: profile?.last_name ?? null,
       role: profile?.role ?? null,
       doctor_office: profile?.doctor_office ?? null,
+      offices: accessByUser.get(user.id) ?? [],
       status: user.last_sign_in_at
         ? "active"
         : user.invited_at

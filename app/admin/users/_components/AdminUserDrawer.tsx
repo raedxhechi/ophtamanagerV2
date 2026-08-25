@@ -199,6 +199,7 @@ function AdminUserForm({
             offices={offices}
             defaultRole={user.role}
             defaultOfficeId={user.doctor_office?.id ?? null}
+            defaultOfficeIds={user.offices.map((office) => office.id)}
             defaultFirstName={user.first_name}
             defaultLastName={user.last_name}
           />
