@@ -198,6 +198,38 @@ record of what those accounts may do.
   select is driven by `Constants.public.Enums.user_role` in `types/supabase.ts`,
   so a role added by a migration appears as soon as the types are regenerated.
 
+## The signed-in user on the client
+
+`zustand/user` holds who is signed in — the auth `user`, their `user_data` row
+with the active office joined in, and their `user_settings` row. The admin
+layout (`app/admin/layout.tsx`) reads all three server-side and hands them to
+`UserStoreProvider`; `user-nav.tsx` and `nav-user.tsx` read them back out, so
+the header menu and the sidebar menu cannot disagree about who is signed in.
+
+- **A store per provider, not a module singleton.** The values come from a
+  server component that re-runs per request, and one store shared across every
+  request the same Node process serves would leak one user's row to the next.
+- **Seeded on every server render, not just the first.** The store is created
+  once, so the provider re-hydrates it whenever the props change — a reload, or
+  a `router.refresh()` after a save. The comparison is a JSON snapshot because
+  each server render deserialises fresh objects, so identities always differ.
+- **The settings copy is a snapshot, not the live value.** Tables take their
+  column order and visibility from `useMyUserSettings`
+  (`react-query/userSettings.tsx`), which is what the debounced save writes back
+  into — that stays the live copy. The provider primes that query's cache from
+  the row the server read, so the first table to mount doesn't refetch a row
+  that arrived with the page, and the store and the cache start out agreeing.
+  Priming happens on the way in only: doing it again on a later hydration could
+  overwrite the cache from a server read older than an unsaved column change
+  still sitting in the 600 ms save debounce.
+- Only `/admin` has a provider. The private area passes `userData` down from its
+  own layout as props and needs no store; `useUserStore` throws outside one
+  rather than handing back an empty user.
+- `lib/user.ts` holds the name and initials fallbacks all three user menus
+  share: the profile's first/last name first (what an admin sets on
+  `/admin/users`), then the auth metadata an invitation carries, then the
+  email's local part.
+
 ## Multi-office access
 
 "The office a user belongs to" is two things, and the **manager** role is why.
