@@ -96,6 +96,12 @@
       "emailNotConfirmed": "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.",
       "userBanned": "Dieses Konto ist gesperrt. Bitte wenden Sie sich an die Administration.",
       "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    },
+    "notices": {
+      "adminRedirected": {
+        "title": "Sie wurden von der Live-App hierher weitergeleitet",
+        "body": "Der Administrationsbereich dort ist noch im Aufbau, und die Arbeit damit könnte die Live-Daten beschädigen — deshalb nutzen Administratoren vorerst diese Entwicklungsvorschau. Ihre Anmeldung wird nicht übernommen; bitte melden Sie sich unten erneut an. Entschuldigen Sie die Unannehmlichkeiten."
+      }
     }
   },
   "component": {

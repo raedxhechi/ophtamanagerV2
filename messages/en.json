@@ -96,6 +96,12 @@
       "emailNotConfirmed": "Please confirm your email address first.",
       "userBanned": "This account is blocked. Please contact an administrator.",
       "generic": "Something went wrong. Please try again."
+    },
+    "notices": {
+      "adminRedirected": {
+        "title": "You've been redirected from the live app",
+        "body": "The admin area there is still under construction, and working in it could damage live data — so administrators use this development preview for now. Your session doesn't carry across, so please sign in again below. Sorry for the inconvenience."
+      }
     }
   },
   "component": {
