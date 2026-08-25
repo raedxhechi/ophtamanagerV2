@@ -254,12 +254,55 @@ write their own row would let them write their own `role`.
 A manager also holds two grants a doctor does not: UPDATE and DELETE on the
 orders (and their suborders) of the offices they cover.
 
-**What is not built yet**: nothing in the app calls `set_active_office`, so a
-manager cannot switch which office they create in; the patient and order lists
-merge every office they cover with no office column or filter; and the
-update/delete grants have no UI, since order editing lives in `/admin/orders`
-behind `updateOrderAsAdmin` and `proxy.ts` keeps non-admins out of `/admin`.
-Granting the offices (`/admin/users`) is the part that exists.
+**What is not built yet**: the manager's UPDATE and DELETE grants on orders have
+no UI, since order editing lives in `/admin/orders` behind `updateOrderAsAdmin`
+and `proxy.ts` keeps non-admins out of `/admin`.
+
+### The selected office
+
+An admin reaches every office and a manager reaches several, so the private area
+has to know *which* one they are working in. That is
+`user_settings.selected_doctor_office`, and `lib/office/context.ts` is the one
+place that resolves it.
+
+- `getOfficeContext()` returns the office being worked in, the offices that may
+  be switched to, and whether to offer the switcher at all. Wrapped in React's
+  `cache()`: the header and the page below it both need it and cannot pass it
+  between them, so every caller after the first in a request is free.
+- **One query lists the options for both roles**, because the RLS on
+  `doctor_office` already says the right thing — the admin policy returns every
+  office, and "Users can view their connected doctor office", widened to the
+  access set, returns a manager's. No role branch is needed.
+- **The stored value is a preference, never a grant.** It is re-checked against
+  those options on every read, so a manager whose grant was revoked falls
+  through to the next candidate: their own `doctor_office_id`, then simply the
+  first office. That last step is also what a brand-new admin lands on before
+  choosing anything.
+- A doctor, assistant or pharmacist never sees a picker: `canSwitchOffices()` is
+  false for them and the context is just the office on their profile, so their
+  `.eq("doctor_office_id", ...)` narrows to exactly what RLS was already giving
+  them. Nothing about their experience changes.
+- **Creates name the office explicitly** — the patient action, the order and the
+  parked draft. The `current_office_id()` column default is only right for
+  someone with a single office: it is null for an admin (a not-null violation)
+  and points at the profile's office rather than the selected one for a manager.
+  It is omitted, not nulled, when the caller genuinely doesn't know, so the
+  default still covers the single-office case.
+- Switching writes the column and calls `revalidatePath("/", "layout")`
+  (`SiteHeader/actions.ts`): every list in the private area is scoped to the
+  office, not just the page the switcher is sitting on, and the client-side
+  router cache is holding the others. The patient picker and the policy list are
+  TanStack queries keyed by office id, so they refetch on their own.
+- In the header, `EntitySheet` takes a `nameSlot` that replaces its label pill;
+  the office passes `OfficeSwitcher` into it for the two roles that may switch.
+  The info button and the details sheet are unchanged either way.
+
+The three office-scoped lists got composite indexes in the same migration —
+`(doctor_office_id, created_at desc, id desc)` on patients and orders,
+`(doctor_office_id, created_at desc)` on draft orders. They match the lists'
+`where … order by … limit` exactly, so a page is a range scan rather than a
+sort of the office's whole history, and the leading column still serves plain
+foreign-key lookups and the `= any (...)` RLS checks.
 
 ## Directus mirror
 

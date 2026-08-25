@@ -1,4 +1,5 @@
 import type { OrderWithSubOrders } from "@/types";
+import { getOfficeContext } from "@/lib/office/context";
 import { createClient } from "@/supabase/server";
 
 import { OrdersTable } from "./OrdersTable";
@@ -27,11 +28,23 @@ export async function OrdersData({
   search: string;
 }) {
   const supabase = await createClient();
+  const { officeId } = await getOfficeContext();
+
+  // See PatientsData for why this is said rather than shown as an empty table.
+  if (!officeId) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No doctor office selected.
+      </p>
+    );
+  }
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  // RLS scopes this to the current user's office automatically. `count: exact`
+  // Scoped to the office being worked in — the one picked in the header for an
+  // admin or a manager — on top of what RLS already allows, and served by
+  // orders_office_created_idx. `count: exact`
   // returns the office's (filtered) order count so the page count can be
   // derived. Search is server-side: each whitespace-separated token must appear
   // in the order's `search_text` (ANDed), so results span all pages, not just
@@ -40,6 +53,7 @@ export async function OrdersData({
   let query = supabase
     .from("orders")
     .select(ORDERS_SELECT, { count: "exact" })
+    .eq("doctor_office_id", officeId)
     .order("created_at", { ascending: false })
     // Stable tiebreaker so orders with an identical created_at keep a fixed
     // order and never shuffle between pages.

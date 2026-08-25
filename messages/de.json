@@ -6,6 +6,7 @@
     "pharmacy": "Apotheke",
     "pharmacyDetails": "Apothekendaten",
     "noOffice": "Keine Praxis",
+    "switchOffice": "Praxis wechseln",
     "policyImage": "Versicherungsinformationen",
     "fields": {
       "name": "Name",

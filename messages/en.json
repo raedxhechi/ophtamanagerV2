@@ -6,6 +6,7 @@
     "pharmacy": "Pharmacy",
     "pharmacyDetails": "Pharmacy details",
     "noOffice": "No office",
+    "switchOffice": "Switch doctor office",
     "policyImage": "Insurance policy",
     "fields": {
       "name": "Name",

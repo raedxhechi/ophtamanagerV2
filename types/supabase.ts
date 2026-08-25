@@ -747,6 +747,7 @@ export type Database = {
           created_at: string
           orders_table_settings: Json | null
           patient_table_settings: Json | null
+          selected_doctor_office: string | null
           updated_at: string
           user_id: string
         }
@@ -756,6 +757,7 @@ export type Database = {
           created_at?: string
           orders_table_settings?: Json | null
           patient_table_settings?: Json | null
+          selected_doctor_office?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -765,10 +767,18 @@ export type Database = {
           created_at?: string
           orders_table_settings?: Json | null
           patient_table_settings?: Json | null
+          selected_doctor_office?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_settings_selected_doctor_office_fkey"
+            columns: ["selected_doctor_office"]
+            isOneToOne: false
+            referencedRelation: "doctor_office"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_settings_user_id_fkey"
             columns: ["user_id"]

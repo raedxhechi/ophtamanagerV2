@@ -1,3 +1,4 @@
+import { getOfficeContext } from "@/lib/office/context";
 import { createClient } from "@/supabase/server";
 
 import { PatientsTable, type PatientRow } from "./PatientsTable";
@@ -36,18 +37,34 @@ export async function PatientsData({
   search: string;
 }) {
   const supabase = await createClient();
+  const { officeId } = await getOfficeContext();
+
+  // An admin who has not been given any office to look at, or a profile with
+  // none. RLS would return nothing anyway; saying so beats an empty table that
+  // looks like an office with no patients.
+  if (!officeId) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No doctor office selected.
+      </p>
+    );
+  }
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  // RLS scopes this to the current user's office automatically. `count: exact`
-  // returns the office's (filtered) patient count so the page count can be
-  // derived. Search is server-side: each whitespace-separated token must appear
-  // in the patient's `search_text` (ANDed), so results span all pages, not just
-  // the loaded one.
+  // Scoped to the office being worked in, which for an admin or a manager is
+  // the one they picked in the header. RLS already limits what they *may* see;
+  // this narrows it to the one office they are looking at, and is what
+  // patients_office_created_idx is built for. `count: exact` returns the
+  // office's (filtered) patient count so the page count can be derived. Search
+  // is server-side: each whitespace-separated token must appear in the
+  // patient's `search_text` (ANDed), so results span all pages, not just the
+  // loaded one.
   let query = supabase
     .from("patients")
     .select(PATIENTS_SELECT, { count: "exact" })
+    .eq("doctor_office_id", officeId)
     .order("created_at", { ascending: false })
     // Stable tiebreaker so patients with an identical created_at keep a fixed
     // order and never shuffle between pages.
