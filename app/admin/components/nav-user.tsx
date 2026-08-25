@@ -6,7 +6,6 @@ import {
   IconDotsVertical,
   IconLogout,
   IconSettings,
-  IconUsers,
 } from "@tabler/icons-react";
 
 import { client } from "@/api/browser/client";
@@ -102,12 +101,6 @@ export function NavUser() {
                 <Link href="/admin/settings">
                   <IconSettings />
                   Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/admin/users">
-                  <IconUsers />
-                  Users
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
