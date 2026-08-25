@@ -1,4 +1,5 @@
 import type { DraftOrder } from "@/types";
+import { NoOfficeSelected } from "@/components/no-office-selected";
 import { getOfficeContext } from "@/lib/office/context";
 import { createClient } from "@/supabase/server";
 
@@ -32,9 +33,7 @@ export default async function DraftOrdersPage() {
       </div>
 
       {!officeId ? (
-        <p className="text-sm text-muted-foreground">
-          No doctor office selected.
-        </p>
+        <NoOfficeSelected what="draft orders" />
       ) : error ? (
         <p className="text-sm text-destructive">
           Failed to load draft orders: {error.message}

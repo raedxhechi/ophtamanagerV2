@@ -362,6 +362,7 @@ export type Database = {
           medicine_id: string
           quantity: number
           search_text: string | null
+          status: Database["public"]["Enums"]["order_status"] | null
           updated_at: string
         }
         Insert: {
@@ -375,6 +376,7 @@ export type Database = {
           medicine_id: string
           quantity: number
           search_text?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
           updated_at?: string
         }
         Update: {
@@ -388,6 +390,7 @@ export type Database = {
           medicine_id?: string
           quantity?: number
           search_text?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
           updated_at?: string
         }
         Relationships: [
@@ -829,6 +832,7 @@ export type Database = {
       insurance_type: "Privat" | "Gesetzlich"
       invoice_types: "Praxis" | "Kasse" | "Patient"
       medicine_type: "Rezeptur" | "Fertigarzneimittel"
+      order_status: "pending" | "processing" | "ready" | "delivered"
       user_role: "admin" | "doctor" | "manager" | "assistant" | "pharmacist"
     }
     CompositeTypes: {
@@ -964,6 +968,7 @@ export const Constants = {
       insurance_type: ["Privat", "Gesetzlich"],
       invoice_types: ["Praxis", "Kasse", "Patient"],
       medicine_type: ["Rezeptur", "Fertigarzneimittel"],
+      order_status: ["pending", "processing", "ready", "delivered"],
       user_role: ["admin", "doctor", "manager", "assistant", "pharmacist"],
     },
   },

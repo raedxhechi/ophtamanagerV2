@@ -1,12 +1,15 @@
 {
   "header": {
-    "adminDashboard": "Dashboard",
+    "admin": "Admin",
     "doctorOffice": "Doctor office",
     "doctorOfficeDetails": "Practice details",
     "pharmacy": "Pharmacy",
     "pharmacyDetails": "Pharmacy details",
     "noOffice": "No office",
     "switchOffice": "Switch doctor office",
+    "selectOfficeTitle": "Select a doctor office",
+    "selectOfficeDescription": "Choose the doctor office you want to work in. Its patients and orders are what you'll see, and what you create belongs to it. You can switch at any time from the header.",
+    "selectOfficeEmpty": "You have no doctor office assigned yet. Ask an admin to grant you one.",
     "policyImage": "Insurance policy",
     "fields": {
       "name": "Name",

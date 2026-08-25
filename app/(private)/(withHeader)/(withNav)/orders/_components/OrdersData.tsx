@@ -1,4 +1,6 @@
 import type { OrderWithSubOrders } from "@/types";
+import { canEditOrderStatus } from "@/lib/orders/status";
+import { NoOfficeSelected } from "@/components/no-office-selected";
 import { getOfficeContext } from "@/lib/office/context";
 import { createClient } from "@/supabase/server";
 
@@ -28,15 +30,13 @@ export async function OrdersData({
   search: string;
 }) {
   const supabase = await createClient();
-  const { officeId } = await getOfficeContext();
+  const { officeId, role } = await getOfficeContext();
 
-  // See PatientsData for why this is said rather than shown as an empty table.
+  // An admin or manager who has not picked an office yet. The query is skipped
+  // entirely rather than run on a null office: saying so beats an empty table
+  // that reads as an office with no orders.
   if (!officeId) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No doctor office selected.
-      </p>
-    );
+    return <NoOfficeSelected what="orders" />;
   }
 
   const from = (page - 1) * PAGE_SIZE;
@@ -86,6 +86,9 @@ export async function OrdersData({
       totalCount={totalCount}
       pageSize={PAGE_SIZE}
       search={search}
+      // Decided on the server, where the role is already known — the private
+      // area has no user store to read it from on the client.
+      canEditStatus={canEditOrderStatus(role)}
     />
   );
 }

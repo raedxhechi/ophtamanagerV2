@@ -9,10 +9,11 @@ import { getOfficeContext } from "@/lib/office/context";
 import { getPolicyImageUrl } from "@/lib/policyImage";
 import { createClient } from "@/supabase/server";
 
-import { AdminDashboardButton } from "./AdminDashboardButton";
+import { AdminButton } from "./AdminButton";
 import { EntitySheet } from "./EntitySheet";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
+import { OfficeSetupDialog } from "./OfficeSetupDialog";
 import { OfficeSwitcher } from "./OfficeSwitcher";
 import { UserNav } from "./UserNav";
 
@@ -62,7 +63,7 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
         <div className="flex items-center gap-4">
           <Logo />
           {userData?.role === "admin" ? (
-            <AdminDashboardButton label={t("adminDashboard")} />
+            <AdminButton label={t("admin")} />
           ) : null}
         </div>
 
@@ -107,6 +108,11 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
           <UserNav user={user} role={userData?.role ?? null} />
         </div>
       </div>
+
+      {/* First run: an admin or manager who has never picked an office sees
+          empty lists everywhere, because the app has no way to know which
+          office they mean. Ask, rather than choose one for them. */}
+      {canSwitch && !office ? <OfficeSetupDialog options={options} /> : null}
     </header>
   );
 }

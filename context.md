@@ -230,6 +230,34 @@ the header menu and the sidebar menu cannot disagree about who is signed in.
   `/admin/users`), then the auth metadata an invitation carries, then the
   email's local part.
 
+## Order status
+
+`orders.status` is a nullable `order_status` enum — pending → processing →
+ready → delivered — defaulting to `pending` on insert.
+
+- **Nullable is load-bearing.** The column was added bare and given its default
+  afterwards, so orders that predate it stayed null rather than being backfilled
+  to `pending`: most of them are long since delivered, and a DDL default would
+  have made a claim about history nobody checked. Adopting them is a deliberate
+  backfill in its own migration, not a side effect.
+- **No new policy decides who may set it.** "Admins have full access to orders"
+  and "Managers can update orders in their offices" are the only UPDATE policies
+  on the table, so a doctor or assistant reads a status and can never write one.
+  `canEditOrderStatus()` in `lib/orders/status.ts` is the UI half of that same
+  answer — it picks a dropdown or a read-only badge, so nobody is offered a menu
+  whose every option the database would refuse.
+- The private list learns the role server-side (`getOfficeContext`) and passes a
+  flag through the table's `meta`, so `columns` stays a module constant —
+  `useTableSettings` keys its derived state off that identity, and rebuilding
+  the array each render would reset everyone's saved column layout. The admin
+  list is unconditionally editable: `proxy.ts` admits no one but admins.
+- The cell saves on pick — there is no form around a table cell — while the
+  admin drawer's status is an ordinary form field saved by its own button, so
+  it matches everything else in that drawer. Both go through RLS the same way,
+  reading the row back to tell a refusal from a no-op.
+- The column is visible by default in both tables and can be hidden from the
+  column selector like any other.
+
 ## Multi-office access
 
 "The office a user belongs to" is two things, and the **manager** role is why.
@@ -274,10 +302,16 @@ place that resolves it.
   office, and "Users can view their connected doctor office", widened to the
   access set, returns a manager's. No role branch is needed.
 - **The stored value is a preference, never a grant.** It is re-checked against
-  those options on every read, so a manager whose grant was revoked falls
-  through to the next candidate: their own `doctor_office_id`, then simply the
-  first office. That last step is also what a brand-new admin lands on before
-  choosing anything.
+  those options on every read, so a selection the user may no longer reach (a
+  manager whose grant was revoked) is dropped rather than trusted.
+- **There is deliberately no fallback office.** An admin or manager who has
+  never chosen has `officeId: null`, and the lists skip their query entirely
+  rather than guessing. Falling back to "the first office" would put them in one
+  decided by alphabetical order, and every list they read and every patient they
+  create would quietly belong to it — worse than having none. The header shows
+  "Keine Praxis" and `OfficeSetupDialog` asks for a choice; the pages behind it
+  render `NoOfficeSelected`, and the two create pages refuse up front rather
+  than letting an insert fail the not-null constraint on a filled-in form.
 - A doctor, assistant or pharmacist never sees a picker: `canSwitchOffices()` is
   false for them and the context is just the office on their profile, so their
   `.eq("doctor_office_id", ...)` narrows to exactly what RLS was already giving
@@ -303,6 +337,57 @@ The three office-scoped lists got composite indexes in the same migration —
 `where … order by … limit` exactly, so a page is a range scan rather than a
 sort of the office's whole history, and the leading column still serves plain
 foreign-key lookups and the `= any (...)` RLS checks.
+
+## Directus sync
+
+`/admin/sync` copies the legacy Directus data into Supabase. The overview page
+shows a card per entity and one **Sync all** button; the per-entity pages
+(`/admin/sync/patients` and siblings) still exist and are still routable by
+hand, they just have no tab bar pointing at them any more — picking one out of
+order was the reliable way to end up with rows whose links point at nothing.
+
+- **The order is the dependency chain** and lives in one place, `all/steps.ts`:
+  doctor offices → insurance companies → medicines → insurance policies →
+  patients → orders & suborders. Out of order nothing fails loudly; it succeeds
+  with the links missing, and only a re-run repairs them. The cards are numbered
+  in that same order, so a card sitting at zero explains the empty ones under
+  it. That module is data only — no importers, no server imports — so the
+  browser can hold the same list the server dispatches on.
+- **One request per step, not one for the whole run.** The client walks
+  `SYNC_STEPS` and POSTs `/admin/sync/all/stream/<slug>` once per entity,
+  consuming each stream before starting the next. That is the loop a person used
+  to run by hand, and it is why there is no timeout to tune: each step gets its
+  own request clock instead of six entities sharing one, where the slow ones
+  (patients, orders) would be cut off partway through and the log would look
+  like a crash. `all/runners.ts` maps a slug to its importer.
+- **A failing step does not stop the run.** The steps are independent copies and
+  the ones after a failure are usually still worth doing — a medicine that could
+  not be copied costs a few order links, not the patients. What a step cannot do
+  is get skipped silently, so each one's outcome is logged either way, and the
+  running totals are accumulated client-side from each step's own result.
+- Orders are forwarded event by event rather than collapsed into a summary line:
+  that importer already streams, and its detailed account of a suborder whose
+  patient never made it across is the most useful output in the whole run.
+- **The log replaces the cards** while a sync runs. The counts behind it are
+  stale the moment it starts, and six numbers quietly lying is worse than not
+  showing them; dismissing the run brings them back, freshly read.
+- `SyncTerminal` scrolls the way a shell does: pinned to the newest line while
+  the view is at the bottom, released the moment you scroll up to read
+  something, re-pinned when you come back. A plain "scroll to bottom on every
+  line" effect — which is what it used to do — makes streaming output
+  unreadable. Both the full sync and the per-entity panels use it.
+
+### The insurance-policy link tables
+
+Directus keeps junction rows whose ends have been cleared: 135 of 253
+`insurancePolicies_medicines` rows have no policy, and 41 of 162 company links.
+Upserting those sent `insurance_policy_id: null` into a NOT NULL column — one
+reported error per row, while every real link imported fine, which is why the
+data looked intact and the run looked broken. `usableLinks()` now drops rows
+with a null end, drops rows pointing at a policy that no longer exists, and
+collapses duplicate pairs (9 and 7 of them), reporting each category once with a
+count instead of once per row. The surviving rows go up in one multi-row upsert
+per batch rather than 25 concurrent single-row upserts at the same primary key.
 
 ## Directus mirror
 

@@ -1,3 +1,4 @@
+import { NoOfficeSelected } from "@/components/no-office-selected";
 import { getOfficeContext } from "@/lib/office/context";
 import { createClient } from "@/supabase/server";
 
@@ -39,15 +40,11 @@ export async function PatientsData({
   const supabase = await createClient();
   const { officeId } = await getOfficeContext();
 
-  // An admin who has not been given any office to look at, or a profile with
-  // none. RLS would return nothing anyway; saying so beats an empty table that
-  // looks like an office with no patients.
+  // An admin or manager who has not picked an office yet. The query is skipped
+  // entirely rather than run on a null office: saying so beats an empty table
+  // that reads as an office with no patients.
   if (!officeId) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No doctor office selected.
-      </p>
-    );
+    return <NoOfficeSelected what="patients" />;
   }
 
   const from = (page - 1) * PAGE_SIZE;

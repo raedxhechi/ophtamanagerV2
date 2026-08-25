@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { Button } from "@/components/ui/button";
 import { ColumnSelector } from "@/components/table/ColumnSelector";
+import { OrderStatusCell } from "@/components/orders/OrderStatusCell";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -96,6 +97,20 @@ const columns: ColumnDef<AdminOrderRow>[] = [
     accessorKey: "delivery_date",
     header: "Delivery date",
     cell: ({ row }) => orDash(formatDate(row.original.delivery_date) || null),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    // Always editable here: proxy.ts turns away anyone but an admin from
+    // /admin, and AdminOrdersData checks is_admin() before it queries, so there
+    // is no reader of this table who could not also write the column.
+    cell: ({ row }) => (
+      <OrderStatusCell
+        orderId={row.original.id}
+        status={row.original.status}
+        editable
+      />
+    ),
   },
   {
     accessorKey: "created_at",
