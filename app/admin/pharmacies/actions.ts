@@ -17,6 +17,9 @@ function field(formData: FormData, key: string): string | null {
 /** Shape check on the ids coming out of the form, before they reach a filter. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** The same loose check the invite form uses — a typo, not a spec. */
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 /**
  * Update a pharmacy from the admin drawer.
  *
@@ -59,6 +62,14 @@ export async function updatePharmacy(
     return { error: "A pharmacy needs a name." };
   }
 
+  // Optional, but a mistyped one is worse than none: it is the address every
+  // office is told to write to. The column takes any text — this is the form's
+  // check, not the database's.
+  const contact_email = field(formData, "contact_email");
+  if (contact_email && !EMAIL.test(contact_email)) {
+    return { error: "Enter a valid contact email, or leave it empty." };
+  }
+
   // Whether this row is the default today. Read from the database rather than
   // taken from the form: the drawer shows the flag as a locked checkbox once it
   // is set, and a disabled checkbox submits nothing — trusting the form would
@@ -87,6 +98,7 @@ export async function updatePharmacy(
     .update({
       name,
       contact_person: field(formData, "contact_person"),
+      contact_email,
       phone_number: field(formData, "phone_number"),
       street: field(formData, "street"),
       house_number: field(formData, "house_number"),
