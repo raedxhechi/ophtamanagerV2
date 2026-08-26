@@ -56,6 +56,7 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
   const pharmacyRows: DetailRow[] = [
     { label: t("fields.name"), value: pharmacy?.name ?? "—" },
     { label: t("fields.contactPerson"), value: pharmacy?.contact_person ?? "—" },
+    { label: t("fields.email"), value: pharmacy?.contact_email ?? "—" },
     { label: t("fields.phone"), value: pharmacy?.phone_number ?? "—" },
     {
       label: t("fields.address"),
