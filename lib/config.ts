@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: "Ophtamanager",
+  name: "Ophthamanager",
   url: "",
   ogImage: "",
   description:

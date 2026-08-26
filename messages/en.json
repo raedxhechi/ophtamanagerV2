@@ -6,6 +6,7 @@
     "pharmacy": "Pharmacy",
     "pharmacyDetails": "Pharmacy details",
     "noOffice": "No office",
+    "noPharmacy": "No pharmacy",
     "switchOffice": "Switch doctor office",
     "selectOfficeTitle": "Select a doctor office",
     "selectOfficeDescription": "Choose the doctor office you want to work in. Its patients and orders are what you'll see, and what you create belongs to it. You can switch at any time from the header.",
@@ -14,7 +15,9 @@
     "fields": {
       "name": "Name",
       "email": "Email",
-      "phone": "Phone"
+      "phone": "Phone",
+      "contactPerson": "Contact person",
+      "address": "Address"
     }
   },
   "userNav": {

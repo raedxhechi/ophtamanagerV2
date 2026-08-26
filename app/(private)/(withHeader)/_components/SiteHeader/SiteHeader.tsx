@@ -6,6 +6,7 @@ import type { DetailRow } from "./EntitySheet";
 import type { UserDataWithOffice } from "@/types/user";
 
 import { getOfficeContext } from "@/lib/office/context";
+import { getPharmacyForOffice, pharmacyAddressLine } from "@/lib/pharmacy";
 import { getPolicyImageUrl } from "@/lib/policyImage";
 import { createClient } from "@/supabase/server";
 
@@ -16,13 +17,6 @@ import { Logo } from "./Logo";
 import { OfficeSetupDialog } from "./OfficeSetupDialog";
 import { OfficeSwitcher } from "./OfficeSwitcher";
 import { UserNav } from "./UserNav";
-
-// Pharmacy has no entity in the schema yet — still dummy data.
-const pharmacy = {
-  name: "St. Alexius Apotheke",
-  email: "Alexianerplatz 1a, 41464 Neuss",
-  phone: "+49 30 7654 321",
-};
 
 interface SiteHeaderProps {
   user: User;
@@ -43,17 +37,30 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
     { label: t("fields.phone"), value: office?.phone_number ?? "—" },
   ];
 
-  // The insurance policy image, uploaded by an admin under /admin/policies.
-  // One image covers every office today, so no office id is passed; handing it
-  // `office?.id` is all that's needed once each office has its own (the
-  // resolver prefers the office's and falls back to the shared one).
   const supabase = await createClient();
-  const policyImageUrl = await getPolicyImageUrl(supabase);
+
+  // Two independent reads for the same header, so they go together:
+  //
+  // - The insurance policy image, uploaded by an admin under /admin/policies.
+  //   One image covers every office today, so no office id is passed; handing it
+  //   `office?.id` is all that's needed once each office has its own (the
+  //   resolver prefers the office's and falls back to the shared one).
+  // - The pharmacy that fills this office's orders. Null only if the project has
+  //   no pharmacy at all — every office is attached to one, and the resolver
+  //   falls back to the default for a user who has not picked an office yet.
+  const [policyImageUrl, pharmacy] = await Promise.all([
+    getPolicyImageUrl(supabase),
+    getPharmacyForOffice(supabase, office?.pharmacy_id),
+  ]);
 
   const pharmacyRows: DetailRow[] = [
-    { label: t("fields.name"), value: pharmacy.name },
-    { label: t("fields.email"), value: pharmacy.email },
-    { label: t("fields.phone"), value: pharmacy.phone },
+    { label: t("fields.name"), value: pharmacy?.name ?? "—" },
+    { label: t("fields.contactPerson"), value: pharmacy?.contact_person ?? "—" },
+    { label: t("fields.phone"), value: pharmacy?.phone_number ?? "—" },
+    {
+      label: t("fields.address"),
+      value: pharmacy ? pharmacyAddressLine(pharmacy) : "—",
+    },
   ];
 
   return (
@@ -95,7 +102,7 @@ export async function SiteHeader({ user, userData }: SiteHeaderProps) {
 
         {/* 3. Pharmacy — info button opens a details sidebar */}
         <EntitySheet
-          name={pharmacy.name}
+          name={pharmacy?.name ?? t("noPharmacy")}
           icon={<Pill className="size-4" />}
           title={t("pharmacy")}
           description={t("pharmacyDetails")}

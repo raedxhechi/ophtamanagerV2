@@ -34,7 +34,7 @@ export function Logo() {
         <LogoMark className="w-7" />
       </div>
       <span className="hidden text-lg font-semibold tracking-tight sm:inline-block">
-        Ophtamanager
+        Ophthamanager
       </span>
     </Link>
   );

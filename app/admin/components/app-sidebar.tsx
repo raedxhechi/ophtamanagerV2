@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  IconBuildingStore,
   IconChartBar,
   IconDashboard,
   IconFileDescription,
@@ -58,6 +59,11 @@ const data = {
       icon: IconShieldCheck,
     },
     {
+      title: "Pharmacies",
+      url: "/admin/pharmacies",
+      icon: IconBuildingStore,
+    },
+    {
       title: "Users",
       url: "/admin/users",
       icon: IconUsers,
@@ -103,7 +109,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Link href="/admin">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Ophtamanager</span>
+                <span className="text-base font-semibold">Ophthamanager</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
