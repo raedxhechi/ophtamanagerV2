@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  IconBuildingStore,
   IconChartBar,
   IconDashboard,
   IconFileDescription,
@@ -56,6 +57,11 @@ const data = {
       title: "Policies",
       url: "/admin/policies",
       icon: IconShieldCheck,
+    },
+    {
+      title: "Pharmacies",
+      url: "/admin/pharmacies",
+      icon: IconBuildingStore,
     },
     {
       title: "Users",
