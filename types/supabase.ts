@@ -492,6 +492,7 @@ export type Database = {
       pharmacies: {
         Row: {
           city: string | null
+          contact_email: string | null
           contact_person: string | null
           created_at: string
           default_pharmacy: boolean
@@ -505,6 +506,7 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          contact_email?: string | null
           contact_person?: string | null
           created_at?: string
           default_pharmacy?: boolean
@@ -518,6 +520,7 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          contact_email?: string | null
           contact_person?: string | null
           created_at?: string
           default_pharmacy?: boolean

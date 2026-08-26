@@ -60,6 +60,22 @@ export function PharmacyFields({
             autoComplete="off"
           />
         </div>
+
+        <div className="grid gap-2 sm:col-span-2">
+          <Label htmlFor="contact_email">Contact email</Label>
+          <Input
+            id="contact_email"
+            name="contact_email"
+            type="email"
+            defaultValue={pharmacy.contact_email ?? ""}
+            autoComplete="off"
+            placeholder="kontakt@apotheke.de"
+          />
+          <p className="text-muted-foreground text-xs">
+            Shown to everyone working in an office this pharmacy serves — it is
+            the address they write to.
+          </p>
+        </div>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-[1fr_8rem]">
