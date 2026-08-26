@@ -6,6 +6,7 @@
     "pharmacy": "Apotheke",
     "pharmacyDetails": "Apothekendaten",
     "noOffice": "Keine Praxis",
+    "noPharmacy": "Keine Apotheke",
     "switchOffice": "Praxis wechseln",
     "selectOfficeTitle": "Praxis auswählen",
     "selectOfficeDescription": "Wählen Sie die Praxis, in der Sie arbeiten möchten. Patienten und Bestellungen werden für diese Praxis angezeigt und dort angelegt. Sie können jederzeit oben im Kopfbereich wechseln.",
@@ -14,7 +15,9 @@
     "fields": {
       "name": "Name",
       "email": "E-Mail",
-      "phone": "Telefon"
+      "phone": "Telefon",
+      "contactPerson": "Ansprechpartner",
+      "address": "Adresse"
     }
   },
   "userNav": {
