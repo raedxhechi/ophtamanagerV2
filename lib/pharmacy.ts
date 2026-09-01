@@ -50,25 +50,8 @@ export async function getPharmacyForOffice(
 /**
  * "Alexianerplatz 1a, 41464 Neuss" — as much of it as the row actually has.
  *
- * Every part is nullable and some of the migrated data carries stray whitespace
- * (the one zipcode in the table ends in a space), so this drops the empty pieces
- * rather than printing their separators. Structurally typed so the admin table's
- * row shape fits it as well as a plain pharmacy.
+ * The formatting itself is `lib/address`: doctor offices carry the same four
+ * nullable columns and print them the same way. This name is kept because it is
+ * what the pharmacy screens call it, and it says which address is meant.
  */
-export function pharmacyAddressLine(pharmacy: {
-  street: string | null;
-  house_number: string | null;
-  zipcode: string | null;
-  city: string | null;
-}): string {
-  const street = [pharmacy.street, pharmacy.house_number]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ");
-  const town = [pharmacy.zipcode, pharmacy.city]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ");
-
-  return [street, town].filter(Boolean).join(", ");
-}
+export const pharmacyAddressLine = addressLine;
