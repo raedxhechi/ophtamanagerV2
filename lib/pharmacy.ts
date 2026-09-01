@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/supabase";
 
+import { addressLine } from "./address";
+
 /** A row from the public.pharmacies table. */
 export type Pharmacy = Database["public"]["Tables"]["pharmacies"]["Row"];
 
