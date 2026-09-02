@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy, Pencil } from "lucide-react";
 
 import { createClient } from "@/supabase/server";
+import { Button } from "@/components/ui/button";
 
 import { PolicyDetail } from "../_components/PolicyDetail";
 import type { CompanyItem, MedicineItem } from "../_components/types";
@@ -66,6 +67,21 @@ export default async function PolicyDetailPage({
         </Link>
         <span aria-hidden className="h-4 w-px bg-border" />
         <h1 className="text-xl font-semibold tracking-tight">Policy details</h1>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/policies/new?duplicate=${policy.id}`}>
+              <Copy />
+              Duplicate
+            </Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href={`/admin/policies/${policy.id}/edit`}>
+              <Pencil />
+              Edit policy
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <PolicyDetail medicines={medicines} companies={companies} />
