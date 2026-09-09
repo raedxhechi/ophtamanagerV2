@@ -258,6 +258,64 @@ ready → delivered — defaulting to `pending` on insert.
 - The column is visible by default in both tables and can be hidden from the
   column selector like any other.
 
+## Admin doctor offices
+
+`/admin/doctor-offices` is the office's own screen: its contact details and
+address, and the people who work in it. It is the mirror of `/admin/pharmacies`
+— that one shows the same `doctor_office.pharmacy_id` link from the pharmacy's
+side — except that this one creates rows, which the pharmacy screen deliberately
+does not: "Admins have full access to doctor offices" grants insert as well as
+update, and a practice being taken on is an ordinary event.
+
+- **One drawer creates and edits.** The office's fields are identical either
+  way, and the only differences are the action it posts to and the wording, so
+  splitting them would mean maintaining the same form twice. The name is pinned
+  in the drawer header rather than sitting in the scroll, because it is what
+  says which office is open; Save and Cancel are pinned in the footer.
+- **`pharmacy_id` is not a field.** A new office joins the default pharmacy on
+  insert (20260826150000) and moving one between pharmacies is a separate act
+  neither screen offers. It is omitted from the insert rather than nulled, so
+  the trigger fills it in.
+- **Assigning a user is two different writes**, and `applyMembership()` in
+  `actions.ts` is the whole of that asymmetry. For a manager, ticking adds a
+  `user_office_access` row and unticking revokes one — their active office moves
+  only when it is the office being revoked, and then to the first they have
+  left, the same rule and the same order (by name) as `/admin/users`. For
+  everyone else the office *is* their access, so ticking writes
+  `user_data.doctor_office_id` and the trigger from 20260811120100 collapses
+  their set onto it — which makes it a **move**, and why the row shows the office
+  they are leaving.
+- **Unticking has cases it refuses.** A doctor, assistant or pharmacist with no
+  office is signed in and looking at nothing, and a manager with none is the same
+  thing. Those checkboxes are disabled with the reason next to them, and the
+  action refuses them again — the drawer's copy is a courtesy, the action is the
+  rule. The lock is keyed off who was a member when the drawer opened, so ticking
+  someone and changing your mind before saving undoes a local change rather than
+  tripping over a removal that was never made.
+- **New users are queued, not sent.** The nested "New user" drawer can be opened
+  while the office is still being created, and an invitation has to name the
+  office it is for — so the form is parked in React state, carried along as
+  hidden inputs, and sent by the save action once the insert has come back with
+  an id. The same queue is used when editing an office that already exists,
+  where the invitations *could* go straight out: sending them on save is what
+  keeps Cancel meaning cancel, and an invitation is not something an admin can
+  take back. `_components/pendingUsers.ts` says why it is neither a store nor
+  localStorage.
+- The nested drawer is a **Sheet, not a second `Drawer`**. vaul manages
+  `document.body` itself for its scroll lock, and a second vaul root closing over
+  the first restores the body it found rather than the one underneath; Radix's
+  dialog keeps a stack for exactly this. It creates **doctors only** — an
+  office's users are the people working in it, and a manager spanning offices or
+  another admin is set up on `/admin/users`.
+- **Neither the assignments nor the invitations can undo the office.** It is
+  committed first; a refused assignment or a bounced address comes back as a
+  warning on a save that succeeded, toasted separately so it cannot be missed
+  under the success message.
+- Filtering is client-side, like `/admin/users` — this table holds every office
+  in the app, not a page out of thousands. Column order and visibility persist in
+  `user_settings.admin_doctor_offices_settings`, its own column for the reason
+  the admin patients and orders lists have theirs.
+
 ## Multi-office access
 
 "The office a user belongs to" is two things, and the **manager** role is why.

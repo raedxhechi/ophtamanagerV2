@@ -13,6 +13,7 @@ import {
   IconSearch,
   IconSettings,
   IconShieldCheck,
+  IconStethoscope,
   IconUsers,
 } from "@tabler/icons-react";
 
@@ -62,6 +63,11 @@ const data = {
       title: "Pharmacies",
       url: "/admin/pharmacies",
       icon: IconBuildingStore,
+    },
+    {
+      title: "Doctor offices",
+      url: "/admin/doctor-offices",
+      icon: IconStethoscope,
     },
     {
       title: "Users",

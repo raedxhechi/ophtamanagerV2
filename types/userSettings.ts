@@ -27,4 +27,5 @@ export type TableSettingsKey =
   | "orders_table_settings"
   | "patient_table_settings"
   | "admin_patients_settings"
-  | "admin_orders_settings";
+  | "admin_orders_settings"
+  | "admin_doctor_offices_settings";
