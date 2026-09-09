@@ -7,7 +7,6 @@ import { useState } from "react"
 
 import { login } from "@/api/browser"
 import { authErrorKey, MIN_PASSWORD_LENGTH, type AuthErrorKey } from "@/lib/auth/errors"
-import { type AuthNoticeKey } from "@/lib/auth/notices"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,18 +18,12 @@ import {
 import { Input } from "@/components/ui/input"
 
 import { AuthHeader } from "../../_components/AuthHeader"
-import { AuthNotice } from "../../_components/AuthNotice"
 
 export function LoginForm({
   initialError = null,
-  notice = null,
   className,
   ...props
-}: React.ComponentProps<"form"> & {
-  initialError?: AuthErrorKey | null
-  /** Why this screen is being shown, from `?message=`. Not an error. */
-  notice?: AuthNoticeKey | null
-}) {
+}: React.ComponentProps<"form"> & { initialError?: AuthErrorKey | null }) {
   const t = useTranslations("auth")
   const tErrors = useTranslations("auth.errors")
   const router = useRouter()
@@ -58,7 +51,6 @@ export function LoginForm({
     <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit}>
       <FieldGroup>
         <AuthHeader title={t("login.title")} description={t("login.subtitle")} />
-        {notice && <AuthNotice notice={notice} />}
         <Field>
           <FieldLabel htmlFor="email">{t("fields.email")}</FieldLabel>
           <Input
