@@ -20,9 +20,9 @@ export default function PrescriptionsPage({
   // the orders table's own query doesn't: the office and its default doctor.
   const { data: order, isError, isPending } = useGetOrder(id)
 
-  // On by default: the full form. Off prints the data alone, for blanks that
-  // already carry the red form.
-  const [showTemplate, setShowTemplate] = useState(true)
+  // Off by default: the data alone, for printing onto blanks that already carry
+  // the red form. On draws the form too.
+  const [showTemplate, setShowTemplate] = useState(false)
 
   return (
     <div className='flex h-screen flex-col'>
