@@ -183,6 +183,11 @@ record of what those accounts may do.
   be done explicitly by `syncOfficeAccess()` in `actions.ts`. The table names
   the active office with a `+n` badge for the rest, and filtering by an office
   matches anyone whose set holds it, not just those active in it.
+- **The doctor number is a doctor's field.** `user_data.doctor_number` is free
+  text, shown only while the role select says doctor — hidden rather than
+  unmounted, so flipping the role and back keeps what was typed. For any other
+  role `doctorNumberColumn()` leaves the column out of the write instead of
+  clearing it, so a role changed by mistake doesn't cost the number.
 - **Deleting** a user runs `public.delete_app_user()` (one transaction, admin
   check inside) and then `auth.admin.deleteUser()`. Every FK into `user_data` is
   ON DELETE RESTRICT, so the function decides what happens to each: table
@@ -292,6 +297,17 @@ update, and a practice being taken on is an ordinary event.
   rule. The lock is keyed off who was a member when the drawer opened, so ticking
   someone and changing your mind before saving undoes a local change rather than
   tripping over a removal that was never made.
+- **The default doctor is one of the office's doctors.**
+  `doctor_office.default_doctor_id` points at a `user_data` row, and
+  `20260914120000` holds it to a user whose role is doctor and whose office is
+  this one: a trigger on the office refuses anyone else, and one on `user_data`
+  clears it when that doctor moves office or changes role — from either admin
+  screen — so an office never names someone who has left. `delete_app_user()`
+  releases it too, since the FK is RESTRICT. The drawer's select offers the
+  doctors currently ticked, which is why the ticked set lives in the drawer
+  rather than in `OfficeUsersField`; `applyDefaultDoctor()` writes it *after*
+  the membership, so a doctor ticked in the same save is already a member when
+  the check runs.
 - **New users are queued, not sent.** The nested "New user" drawer can be opened
   while the office is still being created, and an invitation has to name the
   office it is for — so the form is parked in React state, carried along as

@@ -28,9 +28,10 @@ import type {
   AdminDoctorOfficeRow,
   OfficeUserOption,
 } from "./AdminDoctorOfficesData";
+import { DefaultDoctorField } from "./DefaultDoctorField";
 import { DoctorOfficeFields } from "./DoctorOfficeFields";
 import { NewOfficeUserDrawer } from "./NewOfficeUserDrawer";
-import { OfficeUsersField } from "./OfficeUsersField";
+import { officeMemberIds, OfficeUsersField } from "./OfficeUsersField";
 import type { PendingUser } from "./pendingUsers";
 
 /**
@@ -88,6 +89,13 @@ function DoctorOfficeForm({
   // The one controlled field: the nested drawer names the office the new doctor
   // is joining, and while it is being created that name exists nowhere but here.
   const [name, setName] = React.useState(office?.name ?? "");
+
+  // Who is ticked in the user list. Held here rather than in OfficeUsersField
+  // because the default doctor is picked from the doctors among them — including
+  // one ticked in this same sitting.
+  const [members, setMembers] = React.useState(() =>
+    officeMemberIds(users, office?.id ?? null)
+  );
 
   // The invitation queue. React state, living exactly as long as this form —
   // see ./pendingUsers for why it is not a store and not localStorage.
@@ -179,11 +187,19 @@ function DoctorOfficeForm({
           <OfficeUsersField
             officeId={office?.id ?? null}
             users={users}
+            selected={members}
+            onSelectedChange={setMembers}
             pending={pending}
             onInvite={() => setInviting(true)}
             onRemovePending={(key) =>
               setPending((current) => current.filter((user) => user.key !== key))
             }
+          />
+
+          <DefaultDoctorField
+            users={users}
+            members={members}
+            defaultDoctorId={office?.default_doctor_id ?? null}
           />
 
           {!isNew && (

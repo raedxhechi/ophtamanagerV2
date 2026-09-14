@@ -276,7 +276,8 @@
     },
     "OrderDataTableRowActions": {
       "orderDetails": "Order",
-      "hideDetails": "Hide"
+      "hideDetails": "Hide",
+      "prescriptions": "Prescriptions"
     }
   }
 }

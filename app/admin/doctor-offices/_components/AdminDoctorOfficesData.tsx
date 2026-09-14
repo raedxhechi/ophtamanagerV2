@@ -26,6 +26,12 @@ export type OfficeUserOption = {
   activeOfficeName: string | null;
   /** public.user_office_access — every office they may work in. */
   officeIds: string[];
+  /**
+   * Whether they are the default doctor of their office. That is only ever the
+   * active office — the database releases the default when they leave it — so
+   * moving them elsewhere leaves that office without one.
+   */
+  isDefaultDoctor: boolean;
 };
 
 export type AdminDoctorOfficeRow = DoctorOfficeRow & {
@@ -116,6 +122,10 @@ export async function AdminDoctorOfficesData() {
     else accessByUser.set(grant.user_id, [grant.doctor_office_id]);
   }
 
+  const defaultDoctorIds = new Set(
+    offices.map((office) => office.default_doctor_id)
+  );
+
   const users: OfficeUserOption[] = (profilesResult.data ?? []).map((profile) => ({
     id: profile.id,
     name: displayName(profile),
@@ -126,6 +136,7 @@ export async function AdminDoctorOfficesData() {
       ? (officeNames.get(profile.doctor_office_id) ?? null)
       : null,
     officeIds: accessByUser.get(profile.id) ?? [],
+    isDefaultDoctor: defaultDoctorIds.has(profile.id),
   }));
 
   users.sort((a, b) => a.name.localeCompare(b.name));

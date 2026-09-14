@@ -39,6 +39,7 @@ export function UserFields({
   defaultOfficeIds,
   defaultFirstName,
   defaultLastName,
+  defaultDoctorNumber,
 }: {
   offices: OfficeOption[];
   defaultRole?: UserRole | null;
@@ -48,6 +49,7 @@ export function UserFields({
   defaultOfficeIds?: string[];
   defaultFirstName?: string | null;
   defaultLastName?: string | null;
+  defaultDoctorNumber?: string | null;
 }) {
   const [role, setRole] = React.useState<string>(defaultRole ?? "");
 
@@ -159,6 +161,19 @@ export function UserFields({
           )}
         </section>
       )}
+
+      {/* Hidden rather than unmounted for the other roles, so flipping the role
+          away from doctor and back keeps what was typed. The action only writes
+          it for a doctor, so what the hidden field holds goes nowhere. */}
+      <section className={role === "doctor" ? "grid gap-2" : "hidden"}>
+        <Label htmlFor="doctor_number">Doctor number</Label>
+        <Input
+          id="doctor_number"
+          name="doctor_number"
+          defaultValue={defaultDoctorNumber ?? ""}
+          autoComplete="off"
+        />
+      </section>
     </>
   );
 }

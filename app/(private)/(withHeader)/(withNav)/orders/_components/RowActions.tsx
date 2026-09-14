@@ -12,6 +12,7 @@ import { useState } from 'react'
 // import { useAppStore } from '@/zustand/app/app-provider'
 import { useTranslations } from 'next-intl'
 import { OrderWithSubOrders } from '@/types'
+import { PrescriptionsDialog } from './PrescriptionsDialog'
 
 interface DataTableRowActionsProps {
   row: Row<OrderWithSubOrders>
@@ -37,7 +38,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     }
   }
   return (
-    <div className={cn('flex items-center space-x-2 w-[200px]')}>
+    <div className={cn('flex items-center space-x-2 w-[250px]')}>
       {row.getIsExpanded() ? (
         <Button variant='secondary' onClick={handleClick}>
           <>
@@ -86,6 +87,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <Printer />
         </Button>
       </Link>
+      <PrescriptionsDialog order={order} />
     </div>
   )
 }

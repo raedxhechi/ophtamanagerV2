@@ -41,9 +41,31 @@ function assignmentHint(user: OfficeUserOption, officeId: string): string | null
       ? null
       : "Adds this office to the ones they cover.";
   }
-  return user.activeOfficeId && user.activeOfficeId !== officeId
-    ? "Moves them out of their current office."
-    : null;
+  if (!user.activeOfficeId || user.activeOfficeId === officeId) return null;
+  return user.isDefaultDoctor
+    ? "Moves them out of their current office, which is left without a default doctor."
+    : "Moves them out of their current office.";
+}
+
+/**
+ * Who is in this office today: whoever has it as their active office, and every
+ * manager it is granted to. Empty for an office still being created.
+ */
+export function officeMemberIds(
+  users: OfficeUserOption[],
+  officeId: string | null
+): Set<string> {
+  return new Set(
+    officeId
+      ? users
+          .filter(
+            (user) =>
+              user.activeOfficeId === officeId ||
+              user.officeIds.includes(officeId)
+          )
+          .map((user) => user.id)
+      : []
+  );
 }
 
 /**
@@ -54,10 +76,15 @@ function assignmentHint(user: OfficeUserOption, officeId: string): string | null
  * the database says today — so an unchanged list writes nothing. The queue
  * submits one `pending_users` input per row and is sent only after the office
  * has an id (see ./pendingUsers and ../actions.ts).
+ *
+ * The drawer holds the ticked set rather than this field, because the default
+ * doctor is picked from it.
  */
 export function OfficeUsersField({
   officeId,
   users,
+  selected,
+  onSelectedChange,
   pending,
   onInvite,
   onRemovePending,
@@ -65,6 +92,9 @@ export function OfficeUsersField({
   /** The office being edited, or null while one is being created. */
   officeId: string | null;
   users: OfficeUserOption[];
+  /** The ticked user ids — seeded from officeMemberIds(). */
+  selected: Set<string>;
+  onSelectedChange: React.Dispatch<React.SetStateAction<Set<string>>>;
   pending: PendingUser[];
   /** Opens the nested drawer that queues one more doctor. */
   onInvite: () => void;
@@ -75,22 +105,9 @@ export function OfficeUsersField({
   // changing your mind before saving is undoing a local change, not the removal
   // the roles refuse.
   const initialMembers = React.useMemo(
-    () =>
-      new Set(
-        officeId
-          ? users
-              .filter(
-                (user) =>
-                  user.activeOfficeId === officeId ||
-                  user.officeIds.includes(officeId)
-              )
-              .map((user) => user.id)
-          : []
-      ),
+    () => officeMemberIds(users, officeId),
     [users, officeId]
   );
-
-  const [selected, setSelected] = React.useState<Set<string>>(initialMembers);
 
   // Members first, then everyone else — each half in the list's own order, which
   // is by name. Computed once: re-sorting as boxes are ticked would make rows
@@ -106,7 +123,7 @@ export function OfficeUsersField({
   );
 
   const toggle = (id: string, checked: boolean) =>
-    setSelected((current) => {
+    onSelectedChange((current) => {
       const next = new Set(current);
       if (checked) next.add(id);
       else next.delete(id);
