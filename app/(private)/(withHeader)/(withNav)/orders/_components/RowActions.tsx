@@ -4,7 +4,7 @@ import { Row } from '@tanstack/react-table'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { ArrowUpRightFromSquare, ChevronDown, CircleSlash, Printer } from 'lucide-react'
+import { ArrowUpRightFromSquare, ChevronDown, CircleSlash, FileText, Printer } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import styles from './wiggle.module.css'
@@ -12,7 +12,6 @@ import { useState } from 'react'
 // import { useAppStore } from '@/zustand/app/app-provider'
 import { useTranslations } from 'next-intl'
 import { OrderWithSubOrders } from '@/types'
-import { PrescriptionsDialog } from './PrescriptionsDialog'
 
 interface DataTableRowActionsProps {
   row: Row<OrderWithSubOrders>
@@ -87,7 +86,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <Printer />
         </Button>
       </Link>
-      <PrescriptionsDialog order={order} />
+      <Link href={`/order/${row.original.id}/prescriptions`} target='_blank' rel='noopener noreferrer'>
+        <Button variant='default' title={t('component.OrderDataTableRowActions.prescriptions')}>
+          <FileText />
+        </Button>
+      </Link>
     </div>
   )
 }

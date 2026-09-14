@@ -277,7 +277,8 @@
     "OrderDataTableRowActions": {
       "orderDetails": "Order",
       "hideDetails": "Hide",
-      "prescriptions": "Prescriptions"
+      "prescriptions": "Prescriptions",
+      "showTemplate": "Print form template"
     }
   }
 }

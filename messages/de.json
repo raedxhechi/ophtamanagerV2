@@ -277,7 +277,8 @@
     "OrderDataTableRowActions": {
       "orderDetails": "Bestellung",
       "hideDetails": "Ausblenden",
-      "prescriptions": "Rezepte"
+      "prescriptions": "Rezepte",
+      "showTemplate": "Formularvorlage mitdrucken"
     }
   }
 }
