@@ -129,9 +129,9 @@ export function PrescriptionFields({
       <Field x={30} y={162} size={10}>
         {order.medicine?.name}
       </Field>
-      {/* <Field x={30} y={172} size={10}>
-        {`Zur ${quantity}x Injektion durch den Arzt`}
-      </Field> */}
+      <Field x={30} y={172} size={10}>
+        {`Zur 1x Injektion durch den Arzt`}
+      </Field>
       <Field x={30} y={182} size={10}>
         {joinParts('OP-Tag:', shortDate(order.application_date), eyes)}
       </Field>
