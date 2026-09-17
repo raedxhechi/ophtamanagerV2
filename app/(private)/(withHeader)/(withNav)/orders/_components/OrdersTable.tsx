@@ -314,6 +314,7 @@ export function OrdersTable({
                             ...suborder,
                             order: row.original,
                           }))}
+                          canPrintPrescriptions={canPrintPrescriptions}
                         />
                       </div>
                     </TableCell>

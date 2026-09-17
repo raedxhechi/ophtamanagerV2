@@ -76,6 +76,7 @@ async function requireAdmin(
 type OfficeInput = {
   name: string;
   contact_person: string | null;
+  sn: string | null;
   email: string | null;
   phone_number: string | null;
   street: string | null;
@@ -113,6 +114,7 @@ function parseOffice(formData: FormData): { error: string } | OfficeInput {
   return {
     name,
     contact_person: field(formData, "contact_person"),
+    sn: field(formData, "sn"),
     email,
     phone_number: field(formData, "phone_number"),
     street: field(formData, "street"),

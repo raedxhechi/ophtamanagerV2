@@ -46,7 +46,17 @@ export function DoctorOfficeFields({
           />
         </div>
 
-        <div className="grid gap-2 sm:col-span-2">
+        <div className="grid gap-2">
+          <Label htmlFor="sn">SN</Label>
+          <Input
+            id="sn"
+            name="sn"
+            defaultValue={office?.sn ?? ""}
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"

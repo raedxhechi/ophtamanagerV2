@@ -51,6 +51,7 @@ export type Database = {
           name: string
           pharmacy_id: string | null
           phone_number: string | null
+          sn: string | null
           street: string | null
           updated_at: string
           zipcode: string | null
@@ -66,6 +67,7 @@ export type Database = {
           name: string
           pharmacy_id?: string | null
           phone_number?: string | null
+          sn?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
@@ -81,6 +83,7 @@ export type Database = {
           name?: string
           pharmacy_id?: string | null
           phone_number?: string | null
+          sn?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null

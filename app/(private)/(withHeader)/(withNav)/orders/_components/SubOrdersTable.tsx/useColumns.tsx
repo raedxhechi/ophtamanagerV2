@@ -6,7 +6,7 @@ import { ColumnDef } from '@tanstack/react-table'
 
 // import { OrderSubOrderTableItem } from './schema'
 // import { DataTableColumnHeader } from './table/data-table-column-header'
-import { Eye, Printer } from 'lucide-react'
+import { Eye, FileText, Printer } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { SubOrder } from '@/types'
@@ -16,7 +16,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDateFromString } from '@/lib/utils'
 
-export const useColumns = (hideActions?: boolean) => {
+/**
+ * @param canPrintPrescriptions show the prescription action — admins only,
+ *   decided on the server and passed down from the orders table.
+ */
+export const useColumns = (hideActions?: boolean, canPrintPrescriptions?: boolean) => {
   const columns: ColumnDef<SubOrder>[] = [
     {
       accessorKey: 'Name',
@@ -98,11 +102,25 @@ export const useColumns = (hideActions?: boolean) => {
     const action: ColumnDef<SubOrder> = {
       accessorKey: 'print',
       cell: ({ row }) => (
-        <Link href={`/suborder/${row.original.id}/print`} target='_blank' rel='noopener noreferrer'>
-          <Button variant='outline'>
-            <Printer />
-          </Button>
-        </Link>
+        <div className='flex items-center gap-2'>
+          <Link href={`/suborder/${row.original.id}/print`} target='_blank' rel='noopener noreferrer'>
+            <Button variant='outline'>
+              <Printer />
+            </Button>
+          </Link>
+          {/* The order's prescriptions page, narrowed to this one suborder. */}
+          {canPrintPrescriptions && (
+            <Link
+              href={`/order/${row.original.order_id}/prescriptions?suborder=${row.original.id}`}
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              <Button variant='outline'>
+                <FileText />
+              </Button>
+            </Link>
+          )}
+        </div>
       ),
     }
     columns.push(action)

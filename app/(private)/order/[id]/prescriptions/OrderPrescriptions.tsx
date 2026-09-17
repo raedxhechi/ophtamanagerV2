@@ -3,16 +3,20 @@ import { Document, Page } from '@react-pdf/renderer'
 
 import type { OrderWithSubOrders } from '@/types'
 
-import { PrescriptionFields } from './prescription/PrescriptionFields'
-import { PrescriptionTemplate } from './prescription/PrescriptionTemplate'
+import {
+  DEFAULT_PRESCRIPTION_LAYOUT,
+  PRESCRIPTION_LAYOUTS,
+  type PrescriptionLayoutId,
+} from './prescription/layouts'
 
 /**
- * One A6 landscape prescription per suborder, built from two layers:
+ * One A6 landscape prescription per suborder — or just the one named by
+ * `suborderId` — built from the chosen layout's two layers:
  *
- * - `PrescriptionTemplate` — the red pre-printed form (lines, labels, watermark)
- * - `PrescriptionFields` — the order's and that suborder's patient data
+ * - `Template` — the pre-printed paper (lines, labels, letterhead)
+ * - `Fields` — the order's and that suborder's patient data
  *
- * `showTemplate={false}` drops the form and prints the data alone, for feeding
+ * `showTemplate={false}` drops the paper and prints the data alone, for feeding
  * blanks that already carry it.
  *
  * Both layers are absolutely positioned, so nothing flows and nothing can push
@@ -22,22 +26,33 @@ import { PrescriptionTemplate } from './prescription/PrescriptionTemplate'
  */
 export const OrderPrescriptions = ({
   order,
+  suborderId,
+  layout = DEFAULT_PRESCRIPTION_LAYOUT,
   showTemplate = true,
 }: {
   order: OrderWithSubOrders
+  suborderId?: string
+  layout?: PrescriptionLayoutId
   showTemplate?: boolean
-}) => (
-  <Document>
-    {order.suborders.map((suborder) => (
-      <Page
-        key={suborder.id}
-        size='A6'
-        orientation='landscape'
-        style={{ position: 'relative', backgroundColor: '#FFFFFF' }}
-      >
-        {showTemplate && <PrescriptionTemplate />}
-        <PrescriptionFields order={order} suborder={suborder} />
-      </Page>
-    ))}
-  </Document>
-)
+}) => {
+  const { Template, Fields } = PRESCRIPTION_LAYOUTS[layout]
+  const suborders = suborderId
+    ? order.suborders.filter((suborder) => suborder.id === suborderId)
+    : order.suborders
+
+  return (
+    <Document>
+      {suborders.map((suborder) => (
+        <Page
+          key={suborder.id}
+          size='A6'
+          orientation='landscape'
+          style={{ position: 'relative', backgroundColor: '#FFFFFF' }}
+        >
+          {showTemplate && <Template order={order} />}
+          <Fields order={order} suborder={suborder} />
+        </Page>
+      ))}
+    </Document>
+  )
+}

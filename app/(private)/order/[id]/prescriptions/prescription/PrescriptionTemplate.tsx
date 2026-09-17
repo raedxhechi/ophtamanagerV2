@@ -1,6 +1,8 @@
 import React from 'react'
 import { Line, Rect, Svg, Text, View, StyleSheet } from '@react-pdf/renderer'
 
+import { PAGE_HEIGHT, PAGE_WIDTH } from './shared'
+
 // The pre-printed half of the prescription: the red form (Muster 16, printed as
 // "IVOM PRIVATREZEPT") redrawn from a scan of the real blanks. Everything the
 // practice fills in lives in PrescriptionFields — this layer only ever draws the
@@ -10,9 +12,6 @@ import { Line, Rect, Svg, Text, View, StyleSheet } from '@react-pdf/renderer'
 // All coordinates are PDF points from the page's top-left corner, measured off
 // the scan. PrescriptionFields is measured off the same scan, which is what
 // keeps the two layers aligned.
-
-export const PAGE_WIDTH = 419.53 // A6 landscape
-export const PAGE_HEIGHT = 297.64
 
 const RED = '#D4406A'
 const WATERMARK = '#F6E0EA'
@@ -229,7 +228,7 @@ export function PrescriptionTemplate() {
         const x = CODE_BOX.x + i * CODE_BOX.w
         const lines = label.split('\n').length
         return (
-          <React.Fragment key={digit}>
+          <React.Fragment key={i}>
             <Label x={x} y={lines === 1 ? 18.5 : 13.5} width={CODE_BOX.w} align='center' size={4.3}>
               {label}
             </Label>

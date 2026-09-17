@@ -278,7 +278,13 @@
       "orderDetails": "Bestellung",
       "hideDetails": "Ausblenden",
       "prescriptions": "Rezepte",
-      "showTemplate": "Formularvorlage mitdrucken"
+      "showTemplate": "Formularvorlage mitdrucken",
+      "layout": "Vorlage",
+      "suborderNotFound": "Diese Unterbestellung gehört nicht zur Bestellung.",
+      "layouts": {
+        "muster16": "Muster 16 (IVOM Privatrezept)",
+        "letterhead": "Praxis-Briefkopf"
+      }
     }
   }
 }

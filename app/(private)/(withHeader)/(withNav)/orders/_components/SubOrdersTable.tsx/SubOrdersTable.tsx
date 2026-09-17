@@ -21,11 +21,14 @@ import { useColumns } from './useColumns'
 export const SubordersTable = ({
   subOrders,
   hideActions,
+  canPrintPrescriptions,
 }: {
   subOrders: SubOrder[]
   hideActions?: boolean
+  /** Show each row's prescription action — admins only. */
+  canPrintPrescriptions?: boolean
 }) => {
-  const columns = useColumns(hideActions)
+  const columns = useColumns(hideActions, canPrintPrescriptions)
   const table = useReactTable({
     data: subOrders,
     columns,
