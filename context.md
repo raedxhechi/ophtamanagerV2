@@ -332,6 +332,91 @@ update, and a practice being taken on is an ordinary event.
   `user_settings.admin_doctor_offices_settings`, its own column for the reason
   the admin patients and orders lists have theirs.
 
+## Admin insurances
+
+The insurance company's own screen, and it answers two different questions —
+*what is this insurer* and *what does it actually reach* — so it is two routes
+under one nav strip: the list at **`/admin/insurances`** and the three-column
+**`/admin/insurances/overview`**. Both read through `_data.ts`, where
+`loadInsurancesOverview()` is `loadInsuranceCompanies()` plus the medicine
+catalog the third column resolves policy links against.
+
+- **The strip looks like tabs and is navigation.** Radix `Tabs` were the first
+  attempt and are the wrong shape for this: one panel at a time means either
+  throwing the overview's three-deep selection away on every visit to the list
+  (Radix unmounts what isn't showing) or `forceMount` — which sets
+  `present: forceMount || isSelected` and then `hidden: !present`, so *both*
+  panels render stacked and the strip stops appearing to do anything. Two routes
+  have neither problem, each is a link that can be sent to someone, and the back
+  button steps between them. `isActive()` in the sidebar already matches
+  subpaths, so the Insurances row stays lit on the overview.
+- The drawer's save calls `revalidatePath("/admin/insurances", "layout")` rather
+  than the bare path: a renamed company shows on both screens, and only the list
+  carries the drawer that renamed it.
+
+- **The screen creates and edits; it deletes nothing.** A company cannot be
+  removed while a patient or a policy still points at it — both foreign keys are
+  `ON DELETE RESTRICT`, so a delete button would mostly be a button that reports
+  a constraint violation. The edit drawer takes the three fields the row owns
+  (name, type, IK number) and shows the policies that name it as links out to
+  `/admin/policies/[id]`, because a policy is about its office and its medicines
+  as much as its companies and cannot honestly be edited through a window onto
+  one of its three sides.
+- **"New insurance company" lives in the shared chrome**, next to the view
+  switcher, so one button serves both screens. The Directus import on
+  `/admin/sync/insurance-companies` is where the existing rows came from; this
+  is the way in for an insurer that arrives after it. `InsuranceCompanyFields`
+  is the same component in both drawers — an optional `company` prop is the
+  whole difference between the edit form and a blank one.
+- **The create drawer stays open on success**, which is the one place it departs
+  from every other drawer in the admin area. A company on its own reaches
+  nothing: which medicines it covers and which offices may dispense them are a
+  policy's business, so an admin who has just added an insurer is one step into
+  a two-step job. Closing would report success for the half that was done and
+  say nothing about the half that wasn't, so the form is replaced by that
+  sentence and a link to `/admin/policies`. `revalidatePath` re-renders the
+  server components around it without disturbing the drawer, so the new row is
+  already in the table behind the panel.
+- **A duplicate name is refused**, case-insensitively, by `createInsuranceCompany`.
+  There is no unique constraint behind that check, so it is a guard and not a
+  guarantee — two admins racing can still land two rows. It is there because a
+  duplicate is close to permanent (nothing deletes a company, and the FKs stop
+  the database doing it either) and because "Barmer" twice over is a choice
+  nobody can make correctly on the patient form afterwards.
+- **The overview reads left to right because the question does.** A company
+  covers nothing by itself and an office covers nothing by itself; the answer
+  only exists where a policy joins the two. Company → the offices its policies
+  reach → the medicines those policies cover. The badge in the first column is a
+  single letter, **P** for `Privat` (PKV) and **G** for `Gesetzlich` (GKV), with
+  the long form as the accessible name and the tooltip — the distinction is
+  binary, so there is nothing to read, only to recognise, and nothing rests on
+  colour alone.
+- **Two policies to one office is the case the middle column exists for.** An
+  office linked to the same company twice over is a real arrangement, and the
+  two policies need not cover the same medicines — so that office opens into its
+  policies with a checkbox each and the right column shows the union of the
+  ticked ones. A single policy offers no checkbox, because there is nothing to
+  choose between; a company that reaches exactly one office has that office
+  selected by the same click that picked the company.
+- **A policy is called what `/admin/policies` calls it.** The middle column's
+  labels come from `listPolicySummaries()` rather than a query of its own — that
+  is the function that numbers a policy within its office, and two screens
+  numbering independently would be two screens talking about different things.
+  `insurance_policy.doctor_office_id` is nullable, so policies belonging to no
+  office are grouped under one pseudo entry, last and in italics: a company
+  linked only through an unassigned policy would otherwise read as linked to
+  nothing at all.
+- **There is no patient count on this screen**, though it is the obvious thing
+  to want next to a company. The Data API caps a read at 1000 rows
+  (`max_rows`) and PostgREST aggregates are disabled on this project, so
+  counting 1294 patients in the browser would quietly undercount rather than
+  fail; the honest version needs a `security invoker` function in a migration,
+  and that is a schema change this screen deliberately did not make.
+- Filtering is client-side, like `/admin/users` and `/admin/pharmacies` — the
+  whole catalog arrives with the page. Unlike the patients and orders lists,
+  column order and visibility are not persisted: five columns is not a layout
+  anyone needs to rearrange.
+
 ## Multi-office access
 
 "The office a user belongs to" is two things, and the **manager** role is why.
