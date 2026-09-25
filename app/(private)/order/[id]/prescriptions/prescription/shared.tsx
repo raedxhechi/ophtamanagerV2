@@ -20,7 +20,15 @@ export const LAYER = {
 } as const
 
 const DATA_FONT = { fontFamily: 'Courier', fontSize: 12, lineHeight: 1 } as const
-const STAMP_FONT = { fontFamily: 'Helvetica', fontSize: 8.5, lineHeight: 1 } as const
+
+/**
+ * The stamp's two type sizes, and how far one line pushes the next down. The
+ * leading is barely over 1 on purpose: the rubber stamp this stands in for sets
+ * its lines almost touching, and the block has to fit the space beside the
+ * signature.
+ */
+const STAMP_SIZE = { bold: 9, plain: 7.8 } as const
+const STAMP_LEADING = 1.06
 
 type FieldProps = {
   x: number
@@ -73,40 +81,79 @@ export const eyesLabel = (suborder: OrderSubOrder) =>
 
 /**
  * The practice stamp, printed in place of the rubber one: centred lines in
- * [left, left + width]. Empty lines are skipped so the block closes up instead
- * of leaving gaps.
+ * [left, left + width], set the way the real stamp sets them —
+ *
+ *   **Doctor's name**            bold, large
+ *   Practice name                plain
+ *   Street and house no. Tel.    plain
+ *   **Postcode and town**        bold, large
+ *   BSNR                         plain
+ *
+ * Each line advances by its own height rather than by a fixed gap, so the two
+ * bold ones take the room they need without opening a space under the small
+ * ones. Empty lines are dropped before anything is placed, so the block closes
+ * up instead of leaving a hole where a missing phone number would have been.
  */
 export function Stamp({
   order,
   left,
   top,
   width,
-  lineGap = 11,
+  leading = STAMP_LEADING,
 }: {
   order: OrderWithSubOrders
   left: number
   top: number
   width: number
-  lineGap?: number
+  /** Line height as a multiple of each line's own size. */
+  leading?: number
 }) {
   const office = order.doctor_office
   const doctor = office?.default_doctor
-  const lines = [
-    joinParts(doctor?.first_name, doctor?.last_name),
-    office?.name,
-    joinParts(office?.street, office?.house_number),
-    office?.phone_number ? `Tel.: ${office.phone_number}` : null,
-    joinParts(office?.zipcode, office?.city),
-  ].filter(Boolean)
+
+  const lines: { text: string; bold: boolean }[] = []
+  const add = (text: string | null, bold = false) => {
+    if (text) lines.push({ text, bold })
+  }
+
+  add(joinParts(doctor?.first_name, doctor?.last_name), true)
+  add(office?.name ?? null)
+  add(
+    joinParts(
+      joinParts(office?.street, office?.house_number),
+      office?.phone_number ? `Tel.: ${office.phone_number}` : null
+    )
+  )
+  add(joinParts(office?.zipcode, office?.city), true)
+  add(office?.bsnr ? `BSNR: ${office.bsnr}` : null)
+
+  // Walked once up front: a line's position depends on the heights of every
+  // line above it, and they are not all the same height.
+  let offset = 0
+  const placed = lines.map((line) => {
+    const fontSize = line.bold ? STAMP_SIZE.bold : STAMP_SIZE.plain
+    const y = top + offset
+    offset += fontSize * leading
+    return { ...line, fontSize, y }
+  })
 
   return (
     <>
-      {lines.map((line, i) => (
+      {placed.map((line, i) => (
         <Text
           key={i}
-          style={{ ...STAMP_FONT, position: 'absolute', left, width, top: top + i * lineGap, textAlign: 'center' }}
+          style={{
+            position: 'absolute',
+            left,
+            width,
+            top: line.y,
+            textAlign: 'center',
+            fontFamily: line.bold ? 'Helvetica-Bold' : 'Helvetica',
+            fontSize: line.fontSize,
+            lineHeight: 1,
+          }}
         >
-          {line}
+          {line.text}
         </Text>
       ))}
     </>

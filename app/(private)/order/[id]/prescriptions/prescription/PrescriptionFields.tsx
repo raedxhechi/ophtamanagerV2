@@ -23,7 +23,8 @@ export function PrescriptionFields({
 }) {
   const patient = suborder.patient
   const insurance = patient?.insurance_companies
-  const doctor = order.doctor_office?.default_doctor
+  const office = order.doctor_office
+  const doctor = office?.default_doctor
 
   return (
     <View style={LAYER}>
@@ -57,8 +58,13 @@ export function PrescriptionFields({
         {patient?.insurance_number}
       </Field>
 
-      {/* Arzt-Nr., Datum */}
-      <Field x={101.7} y={131.7}>
+      {/* Betriebsstätten-Nr., Arzt-Nr., Datum — the row's three boxes, left to
+          right. The BSNR starts at the same x as the Kostenträgerkennung above
+          it: they share the column the patient block's first divider opens. */}
+      <Field x={30} y={131.7}>
+        {office?.bsnr}
+      </Field>
+      <Field x={104.7} y={131.7}>
         {doctor?.doctor_number}
       </Field>
       <Field x={184.7} y={131.7}>
