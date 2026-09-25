@@ -10,8 +10,8 @@ import {
 } from './prescription/layouts'
 
 /**
- * One A6 landscape prescription per suborder — or just the one named by
- * `suborderId` — built from the chosen layout's two layers:
+ * One A6 landscape prescription per suborder — or just the ones named by
+ * `suborderIds` — built from the chosen layout's two layers:
  *
  * - `Template` — the pre-printed paper (lines, labels, letterhead)
  * - `Fields` — the order's and that suborder's patient data
@@ -26,18 +26,18 @@ import {
  */
 export const OrderPrescriptions = ({
   order,
-  suborderId,
+  suborderIds,
   layout = DEFAULT_PRESCRIPTION_LAYOUT,
   showTemplate = true,
 }: {
   order: OrderWithSubOrders
-  suborderId?: string
+  suborderIds?: string[]
   layout?: PrescriptionLayoutId
   showTemplate?: boolean
 }) => {
   const { Template, Fields } = PRESCRIPTION_LAYOUTS[layout]
-  const suborders = suborderId
-    ? order.suborders.filter((suborder) => suborder.id === suborderId)
+  const suborders = suborderIds
+    ? order.suborders.filter((suborder) => suborderIds.includes(suborder.id))
     : order.suborders
 
   return (

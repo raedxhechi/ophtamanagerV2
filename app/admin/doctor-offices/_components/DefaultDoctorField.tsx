@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { Pencil } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -33,12 +35,15 @@ export function DefaultDoctorField({
   users,
   members,
   defaultDoctorId,
+  onEditDoctor,
 }: {
   users: OfficeUserOption[];
   /** The ids ticked in the user list, live. */
   members: Set<string>;
   /** doctor_office.default_doctor_id as the drawer opened on it. */
   defaultDoctorId: string | null;
+  /** Opens the doctor drawer on the one picked. */
+  onEditDoctor: (doctorId: string) => void;
 }) {
   const [picked, setPicked] = React.useState(defaultDoctorId ?? NONE);
 
@@ -56,24 +61,37 @@ export function DefaultDoctorField({
         name="default_doctor_id"
         value={value === NONE ? "" : value}
       />
-      <Select value={value} onValueChange={setPicked} disabled={!doctors.length}>
-        <SelectTrigger id="default_doctor_id" className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="max-h-80">
-          <SelectItem value={NONE}>No default doctor</SelectItem>
-          {doctors.map((doctor) => (
-            <SelectItem key={doctor.id} value={doctor.id}>
-              {doctor.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex items-center gap-2">
+        <Select value={value} onValueChange={setPicked} disabled={!doctors.length}>
+          <SelectTrigger id="default_doctor_id" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-80">
+            <SelectItem value={NONE}>No default doctor</SelectItem>
+            {doctors.map((doctor) => (
+              <SelectItem key={doctor.id} value={doctor.id}>
+                {doctor.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {/* type="button": inside the office form, a bare button submits it. */}
+        <Button
+          type="button"
+          variant="outline"
+          disabled={value === NONE}
+          onClick={() => onEditDoctor(value)}
+        >
+          <Pencil className="size-4" />
+          Edit
+        </Button>
+      </div>
       <p className="text-muted-foreground text-xs">
         {doctors.length
-          ? "One of the doctors ticked above."
-          : "Tick a doctor above to choose one."}{" "}
+          ? "One of the doctors ticked in the user list below."
+          : "Tick a doctor in the user list below to choose one."}{" "}
         A doctor queued for an invitation can be chosen once the office is saved.
+        Edit opens their name and Arzt-Nr., which save on their own.
       </p>
     </section>
   );

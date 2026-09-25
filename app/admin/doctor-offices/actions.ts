@@ -32,6 +32,8 @@ export type SaveOfficeState =
     }
   | null;
 
+export type SaveDoctorState = { error: string } | { success: true } | null;
+
 /** Trim a FormData string field, returning null when empty. */
 function field(formData: FormData, key: string): string | null {
   const value = formData.get(key);
@@ -76,7 +78,7 @@ async function requireAdmin(
 type OfficeInput = {
   name: string;
   contact_person: string | null;
-  sn: string | null;
+  bsnr: string | null;
   email: string | null;
   phone_number: string | null;
   street: string | null;
@@ -114,7 +116,7 @@ function parseOffice(formData: FormData): { error: string } | OfficeInput {
   return {
     name,
     contact_person: field(formData, "contact_person"),
-    sn: field(formData, "sn"),
+    bsnr: field(formData, "bsnr"),
     email,
     phone_number: field(formData, "phone_number"),
     street: field(formData, "street"),
@@ -166,6 +168,14 @@ function labelFor(profile: {
  * thing — so those come back as warnings and the row is left as it was. The
  * drawer disables those checkboxes, so getting one here means the page was
  * stale; the office's own save still stands.
+ *
+ * A form that carries no `member_ids` field at all is saying nothing about who
+ * works here, and membership is left exactly as it is. That is what the office
+ * drawer does today — it lists the office's users read-only, and people are
+ * moved between offices from /admin/users. Note the difference from a form that
+ * *does* carry the field with nothing in it: that one means "nobody", and still
+ * empties the office. Were the picker to come back, it would submit the field
+ * again and every line below would apply unchanged.
  */
 async function applyMembership(
   supabase: SupabaseClient,
@@ -173,6 +183,8 @@ async function applyMembership(
   formData: FormData
 ): Promise<string[]> {
   const warnings: string[] = [];
+
+  if (!formData.has("member_ids")) return warnings;
 
   const wanted = new Set(
     formData
@@ -593,4 +605,63 @@ export async function updateDoctorOffice(
     invited,
     warnings: [...warnings, ...doctorWarnings, ...inviteWarnings],
   };
+}
+
+/**
+ * Just the doctor's own details, as the nested drawer on the office screen
+ * submits them.
+ *
+ * Deliberately not updateUserProfile(): that one owns the role and the office
+ * assignment and refuses a form that leaves them out. Here the admin is looking
+ * at an office, not at an account — the only question is what the prescription
+ * prints, so the role and every office link are left exactly as they are.
+ */
+export async function updateDoctorDetails(
+  _prev: SaveDoctorState,
+  formData: FormData
+): Promise<SaveDoctorState> {
+  const supabase = await createClient();
+  const guard = await requireAdmin(supabase, "edit a doctor");
+  if ("error" in guard) return guard;
+
+  const id = field(formData, "id");
+  if (!id || !UUID.test(id)) {
+    return { error: "Missing doctor id." };
+  }
+
+  // Read the role back rather than trusting the form: doctor_number is only a
+  // doctor's column, and this drawer is only ever opened on one.
+  const { data: existing, error: readError } = await supabase
+    .from("user_data")
+    .select("role")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (readError) {
+    return { error: readError.message };
+  }
+  if (!existing) {
+    return { error: "That doctor no longer exists." };
+  }
+  if (existing.role !== "doctor") {
+    return { error: "That account is not a doctor." };
+  }
+
+  const { error } = await supabase
+    .from("user_data")
+    .update({
+      first_name: field(formData, "first_name"),
+      last_name: field(formData, "last_name"),
+      doctor_number: field(formData, "doctor_number"),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/admin/doctor-offices");
+  revalidatePath("/admin/users");
+  return { success: true };
 }

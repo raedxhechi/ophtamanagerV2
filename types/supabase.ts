@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       doctor_office: {
         Row: {
+          bsnr: string | null
           city: string | null
           contact_person: string | null
           created_at: string
@@ -51,12 +52,12 @@ export type Database = {
           name: string
           pharmacy_id: string | null
           phone_number: string | null
-          sn: string | null
           street: string | null
           updated_at: string
           zipcode: string | null
         }
         Insert: {
+          bsnr?: string | null
           city?: string | null
           contact_person?: string | null
           created_at?: string
@@ -67,12 +68,12 @@ export type Database = {
           name: string
           pharmacy_id?: string | null
           phone_number?: string | null
-          sn?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
         }
         Update: {
+          bsnr?: string | null
           city?: string | null
           contact_person?: string | null
           created_at?: string
@@ -83,7 +84,6 @@ export type Database = {
           name?: string
           pharmacy_id?: string | null
           phone_number?: string | null
-          sn?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null

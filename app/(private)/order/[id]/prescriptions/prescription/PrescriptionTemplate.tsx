@@ -3,11 +3,15 @@ import { Line, Rect, Svg, Text, View, StyleSheet } from '@react-pdf/renderer'
 
 import { PAGE_HEIGHT, PAGE_WIDTH } from './shared'
 
-// The pre-printed half of the prescription: the red form (Muster 16, printed as
-// "IVOM PRIVATREZEPT") redrawn from a scan of the real blanks. Everything the
-// practice fills in lives in PrescriptionFields — this layer only ever draws the
-// paper, so leaving it out gives a data-only PDF for printing onto blanks that
-// already carry it.
+// The pre-printed half of the prescription: the red form (Muster 16) redrawn
+// from a scan of the real blanks. Everything the practice fills in lives in
+// PrescriptionFields — this layer only ever draws the paper, so leaving it out
+// gives a data-only PDF for printing onto blanks that already carry it.
+//
+// Two blanks share this drawing and differ only in what names the form: the
+// IVOM pad, watermarked "IVOM" and titled "IVOM PRIVATREZEPT", and the plain
+// pink pad, which leaves both blank — hence the `ivom` switch and the two
+// components exported at the bottom.
 //
 // All coordinates are PDF points from the page's top-left corner, measured off
 // the scan. PrescriptionFields is measured off the same scan, which is what
@@ -127,13 +131,15 @@ const ROWS = [
 ]
 const ROW = { x: 256.7, w: 150.3, faktor: 347.3, taxe: 364.3, tickStep: 10 }
 
-export function PrescriptionTemplate() {
+function Muster16Template({ ivom }: { ivom: boolean }) {
   return (
     <View style={styles.layer} fixed>
       {/* Drawn first so every other mark, and the data layer, sits on top. */}
-      <Label x={147} y={162} size={66} bold color={WATERMARK} letterSpacing={8}>
-        IVOM
-      </Label>
+      {ivom && (
+        <Label x={147} y={162} size={66} bold color={WATERMARK} letterSpacing={8}>
+          IVOM
+        </Label>
+      )}
 
       <Svg style={styles.layer} width={PAGE_WIDTH} height={PAGE_HEIGHT} viewBox={`0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}`}>
         {/* Patient block */}
@@ -276,9 +282,18 @@ export function PrescriptionTemplate() {
         Unterschrift des Arztes
       </Label>
 
-      <Label x={7.3} y={265.5} width={192.7} align='center' size={9.5} bold>
-        IVOM PRIVATREZEPT
-      </Label>
+      {/* The pink pad leaves this box blank — only the IVOM pad is named. */}
+      {ivom && (
+        <Label x={7.3} y={265.5} width={192.7} align='center' size={9.5} bold>
+          IVOM PRIVATREZEPT
+        </Label>
+      )}
     </View>
   )
 }
+
+/** The IVOM pad: the form under its "IVOM PRIVATREZEPT" name. */
+export const PrescriptionTemplate = () => <Muster16Template ivom />
+
+/** The plain pink pad: the same form with nothing naming it IVOM. */
+export const PinkTemplate = () => <Muster16Template ivom={false} />

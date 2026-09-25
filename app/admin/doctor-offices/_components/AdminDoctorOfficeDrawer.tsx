@@ -30,6 +30,7 @@ import type {
 } from "./AdminDoctorOfficesData";
 import { DefaultDoctorField } from "./DefaultDoctorField";
 import { DoctorOfficeFields } from "./DoctorOfficeFields";
+import { EditDoctorDrawer } from "./EditDoctorDrawer";
 import { NewOfficeUserDrawer } from "./NewOfficeUserDrawer";
 import { officeMemberIds, OfficeUsersField } from "./OfficeUsersField";
 import type { PendingUser } from "./pendingUsers";
@@ -53,7 +54,13 @@ export function AdminDoctorOfficeDrawer({
 }) {
   return (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="!w-[46vw] !max-w-[46vw]">
+      {/*
+        Wider than the 46vw the rest of the admin drawers use, and wider than
+        the doctor drawer that opens on top of this one: the gap is what tells
+        the two apart at a glance, and it is made here rather than by narrowing
+        the doctor's.
+      */}
+      <DrawerContent className="!w-[62vw] !max-w-[62vw]">
         {/*
           Keyed on the office so the form unmounts with the drawer and remounts
           for a different one: that re-seeds the uncontrolled fields, empties the
@@ -90,17 +97,26 @@ function DoctorOfficeForm({
   // is joining, and while it is being created that name exists nowhere but here.
   const [name, setName] = React.useState(office?.name ?? "");
 
-  // Who is ticked in the user list. Held here rather than in OfficeUsersField
-  // because the default doctor is picked from the doctors among them — including
-  // one ticked in this same sitting.
-  const [members, setMembers] = React.useState(() =>
-    officeMemberIds(users, office?.id ?? null)
+  // Who works in this office. Derived rather than held: the list is read-only
+  // now, so nothing in this drawer changes it — a save on /admin/users does,
+  // and this recomputes with the refreshed `users`. The default doctor is
+  // picked from the doctors among them, which is why it lives up here.
+  const members = React.useMemo(
+    () => officeMemberIds(users, office?.id ?? null),
+    [users, office?.id]
   );
 
   // The invitation queue. React state, living exactly as long as this form —
   // see ./pendingUsers for why it is not a store and not localStorage.
   const [pending, setPending] = React.useState<PendingUser[]>([]);
   const [inviting, setInviting] = React.useState(false);
+
+  // The default doctor being edited in the drawer stacked on this one. Held as
+  // an id and looked up in `users`, so a save underneath — which refreshes the
+  // list — is reflected here rather than pinning a stale copy.
+  const [editingDoctorId, setEditingDoctorId] = React.useState<string | null>(null);
+  const editingDoctor =
+    users.find((user) => user.id === editingDoctorId) ?? null;
 
   const queueUser = React.useCallback(
     (user: Omit<PendingUser, "key">) => {
@@ -182,24 +198,36 @@ function DoctorOfficeForm({
         </DrawerHeader>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
-          <DoctorOfficeFields office={office} />
-
-          <OfficeUsersField
-            officeId={office?.id ?? null}
-            users={users}
-            selected={members}
-            onSelectedChange={setMembers}
-            pending={pending}
-            onInvite={() => setInviting(true)}
-            onRemovePending={(key) =>
-              setPending((current) => current.filter((user) => user.key !== key))
-            }
-          />
+          {/* First two in the body, directly under the pinned name: what this
+              drawer is usually opened to change. */}
+          <div className="grid gap-2">
+            <Label htmlFor="bsnr">BSNR</Label>
+            <Input
+              id="bsnr"
+              name="bsnr"
+              defaultValue={office?.bsnr ?? ""}
+              autoComplete="off"
+            />
+          </div>
 
           <DefaultDoctorField
             users={users}
             members={members}
             defaultDoctorId={office?.default_doctor_id ?? null}
+            onEditDoctor={setEditingDoctorId}
+          />
+
+          <DoctorOfficeFields office={office} />
+
+          <OfficeUsersField
+            officeId={office?.id ?? null}
+            users={users}
+            members={members}
+            pending={pending}
+            onInvite={() => setInviting(true)}
+            onRemovePending={(key) =>
+              setPending((current) => current.filter((user) => user.key !== key))
+            }
           />
 
           {!isNew && (
@@ -240,6 +268,12 @@ function DoctorOfficeForm({
         open={inviting}
         onOpenChange={setInviting}
         onQueue={queueUser}
+      />
+
+      <EditDoctorDrawer
+        doctor={editingDoctor}
+        open={editingDoctorId !== null}
+        onOpenChange={(next) => !next && setEditingDoctorId(null)}
       />
     </>
   );

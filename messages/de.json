@@ -278,12 +278,16 @@
       "orderDetails": "Bestellung",
       "hideDetails": "Ausblenden",
       "prescriptions": "Rezepte",
-      "showTemplate": "Formularvorlage mitdrucken",
+      "print": "Drucken",
+      "printWithoutTemplateHint": "Die Vorschau zeigt das Formular, gedruckt wird ohne.",
+      "printing": "Druckt...",
+      "noPrescriptionsForPad": "Keine Rezepte für diesen Block.",
       "layout": "Vorlage",
       "suborderNotFound": "Diese Unterbestellung gehört nicht zur Bestellung.",
       "layouts": {
-        "muster16": "Muster 16 (IVOM Privatrezept)",
-        "letterhead": "Praxis-Briefkopf"
+        "ivom": "IVOM",
+        "pink": "Pink",
+        "bleu": "Bleu"
       }
     }
   }

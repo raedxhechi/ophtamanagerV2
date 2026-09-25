@@ -9,9 +9,12 @@ import type { AdminDoctorOfficeRow } from "./AdminDoctorOfficesData";
  * How to reach the office and where it is. Uncontrolled inputs — the drawer
  * remounts this per office, so the defaults are re-seeded on their own.
  *
- * The name is not here: it is pinned in the drawer header, above the scroll, so
- * it stays readable while the rest of the form is scrolled. `pharmacy` is not
- * here either — a new office joins the default pharmacy on insert
+ * Neither the name nor the BSNR is here. The name is pinned in the drawer
+ * header, above the scroll, so it stays readable while the rest of the form is
+ * scrolled; the BSNR and the default doctor are rendered by the drawer directly
+ * beneath it, because those three are what an admin opens this drawer for and
+ * the address is what they scroll past. `pharmacy` is not here either — a new
+ * office joins the default pharmacy on insert
  * (20260826150000_doctor_office_joins_default_pharmacy.sql) and moving one
  * between pharmacies is not something either screen offers.
  */
@@ -42,16 +45,6 @@ export function DoctorOfficeFields({
             name="phone_number"
             type="tel"
             defaultValue={office?.phone_number ?? ""}
-            autoComplete="off"
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="sn">SN</Label>
-          <Input
-            id="sn"
-            name="sn"
-            defaultValue={office?.sn ?? ""}
             autoComplete="off"
           />
         </div>

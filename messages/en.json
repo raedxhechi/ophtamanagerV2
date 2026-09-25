@@ -278,12 +278,16 @@
       "orderDetails": "Order",
       "hideDetails": "Hide",
       "prescriptions": "Prescriptions",
-      "showTemplate": "Print form template",
+      "print": "Print",
+      "printWithoutTemplateHint": "The preview shows the form; printing leaves it out.",
+      "printing": "Printing...",
+      "noPrescriptionsForPad": "No prescriptions for this pad.",
       "layout": "Template",
       "suborderNotFound": "This suborder does not belong to the order.",
       "layouts": {
-        "muster16": "Muster 16 (IVOM Privatrezept)",
-        "letterhead": "Practice letterhead"
+        "ivom": "IVOM",
+        "pink": "Pink",
+        "bleu": "Bleu"
       }
     }
   }

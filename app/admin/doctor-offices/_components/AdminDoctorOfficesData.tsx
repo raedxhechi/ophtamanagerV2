@@ -21,6 +21,11 @@ export type OfficeUserOption = {
   name: string;
   email: string | null;
   role: UserRole;
+  /** The parts `name` is built from — what the doctor drawer edits. */
+  first_name: string | null;
+  last_name: string | null;
+  /** user_data.doctor_number, the Arzt-Nr. the prescription prints. */
+  doctor_number: string | null;
   /** user_data.doctor_office_id — the active office. */
   activeOfficeId: string | null;
   activeOfficeName: string | null;
@@ -83,7 +88,7 @@ export async function AdminDoctorOfficesData() {
       .order("name"),
     supabase
       .from("user_data")
-      .select("id, email, first_name, last_name, role, doctor_office_id")
+      .select("id, email, first_name, last_name, role, doctor_number, doctor_office_id")
       .order("last_name"),
     supabase.from("user_office_access").select("user_id, doctor_office_id"),
   ]);
@@ -131,6 +136,9 @@ export async function AdminDoctorOfficesData() {
     name: displayName(profile),
     email: profile.email,
     role: profile.role,
+    first_name: profile.first_name,
+    last_name: profile.last_name,
+    doctor_number: profile.doctor_number,
     activeOfficeId: profile.doctor_office_id,
     activeOfficeName: profile.doctor_office_id
       ? (officeNames.get(profile.doctor_office_id) ?? null)
