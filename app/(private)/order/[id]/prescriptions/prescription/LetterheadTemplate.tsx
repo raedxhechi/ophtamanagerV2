@@ -5,7 +5,7 @@ import type { OrderWithSubOrders } from '@/types'
 
 import { LAYER, PAGE_HEIGHT, PAGE_WIDTH, joinParts } from './shared'
 
-// The pre-printed half of the practice's own prescription pad: a thin blue
+// The pre-printed half of the Privat pad, the practice's own: a thin blue
 // frame, a rule beside the patient block, the letterhead on the right and a
 // pale blue band behind the prescription. Redrawn from a scan of the real pad;
 // coordinates are PDF points from the top-left, measured off that scan, as are

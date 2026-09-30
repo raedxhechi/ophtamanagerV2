@@ -286,8 +286,8 @@
       "suborderNotFound": "This suborder does not belong to the order.",
       "layouts": {
         "ivom": "IVOM",
-        "pink": "Pink",
-        "bleu": "Bleu"
+        "gkv": "GKV",
+        "privat": "Privat"
       }
     }
   }

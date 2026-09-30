@@ -9,8 +9,8 @@ import { PAGE_HEIGHT, PAGE_WIDTH } from './shared'
 // gives a data-only PDF for printing onto blanks that already carry it.
 //
 // Two blanks share this drawing and differ only in what names the form: the
-// IVOM pad, watermarked "IVOM" and titled "IVOM PRIVATREZEPT", and the plain
-// pink pad, which leaves both blank — hence the `ivom` switch and the two
+// IVOM pad, watermarked "IVOM" and titled "IVOM PRIVATREZEPT", and the GKV
+// pad, which leaves both blank — hence the `ivom` switch and the two
 // components exported at the bottom.
 //
 // All coordinates are PDF points from the page's top-left corner, measured off
@@ -282,7 +282,7 @@ function Muster16Template({ ivom }: { ivom: boolean }) {
         Unterschrift des Arztes
       </Label>
 
-      {/* The pink pad leaves this box blank — only the IVOM pad is named. */}
+      {/* The GKV pad leaves this box blank — only the IVOM pad is named. */}
       {ivom && (
         <Label x={7.3} y={265.5} width={192.7} align='center' size={9.5} bold>
           IVOM PRIVATREZEPT
@@ -295,5 +295,5 @@ function Muster16Template({ ivom }: { ivom: boolean }) {
 /** The IVOM pad: the form under its "IVOM PRIVATREZEPT" name. */
 export const PrescriptionTemplate = () => <Muster16Template ivom />
 
-/** The plain pink pad: the same form with nothing naming it IVOM. */
-export const PinkTemplate = () => <Muster16Template ivom={false} />
+/** The GKV pad: the same form with nothing naming it IVOM. */
+export const GkvTemplate = () => <Muster16Template ivom={false} />

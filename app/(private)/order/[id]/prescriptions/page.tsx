@@ -26,7 +26,7 @@ import {
 /**
  * The prescriptions for an order, in one of two views:
  *
- * - the whole order — one column per pad (IVOM, Pink, Bleu), each holding the
+ * - the whole order — one column per pad (IVOM, GKV, Privat), each holding the
  *   suborders whose invoice type calls for that pad and printing on its own.
  *   Each pad is a separate run through the printer, on different paper, so the
  *   split is the point: load one pad, print its column, load the next.

@@ -5,7 +5,7 @@ import type { InvoiceType, OrderSubOrder, OrderWithSubOrders } from '@/types'
 import { LetterheadFields } from './LetterheadFields'
 import { LetterheadTemplate } from './LetterheadTemplate'
 import { PrescriptionFields } from './PrescriptionFields'
-import { PinkTemplate, PrescriptionTemplate } from './PrescriptionTemplate'
+import { GkvTemplate, PrescriptionTemplate } from './PrescriptionTemplate'
 
 /**
  * Every prescription layout is a pair of full-sheet layers measured off the
@@ -16,10 +16,10 @@ import { PinkTemplate, PrescriptionTemplate } from './PrescriptionTemplate'
 export const PRESCRIPTION_LAYOUTS = {
   /** The Muster 16 pad, printed as "IVOM PRIVATREZEPT". */
   ivom: { Template: PrescriptionTemplate, Fields: PrescriptionFields },
-  /** The same form on the plain pink pad, with nothing naming it IVOM. */
-  pink: { Template: PinkTemplate, Fields: PrescriptionFields },
-  /** The practice's own letterhead pad. */
-  bleu: { Template: LetterheadTemplate, Fields: LetterheadFields },
+  /** The GKV pad: the same form, with nothing naming it IVOM. */
+  gkv: { Template: GkvTemplate, Fields: PrescriptionFields },
+  /** The Privat pad: the practice's own letterhead. */
+  privat: { Template: LetterheadTemplate, Fields: LetterheadFields },
 } satisfies Record<
   string,
   {
@@ -40,9 +40,9 @@ export const DEFAULT_PRESCRIPTION_LAYOUT: PrescriptionLayoutId = 'ivom'
  * hand, and falls back here for a suborder whose invoice type is unset.
  */
 const LAYOUT_BY_INVOICE_TYPE: Record<InvoiceType, PrescriptionLayoutId> = {
-  Patient: 'bleu',
+  Patient: 'privat',
   Praxis: 'ivom',
-  Kasse: 'pink',
+  Kasse: 'gkv',
 }
 
 export const layoutForInvoiceType = (invoiceType?: InvoiceType | null): PrescriptionLayoutId =>

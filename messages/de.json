@@ -286,8 +286,8 @@
       "suborderNotFound": "Diese Unterbestellung gehört nicht zur Bestellung.",
       "layouts": {
         "ivom": "IVOM",
-        "pink": "Pink",
-        "bleu": "Bleu"
+        "gkv": "GKV",
+        "privat": "Privat"
       }
     }
   }
