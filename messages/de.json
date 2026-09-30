@@ -208,6 +208,7 @@
         "insurance_company": "Krankenkasse",
         "insurance_type": "Versicherungsart",
         "insurance_number": "Versichertennummer",
+        "status": "Status",
         "city": "Stadt",
         "street": "Straße",
         "house_number": "Hausnummer",
@@ -254,6 +255,7 @@
           "empty": "Keine Krankenkassen für diese Versicherungsart"
         },
         "insurance_number": "Versichertennummer",
+        "status": "Status",
         "street": "Straße",
         "house_number": "Hausnummer",
         "zipcode": "PLZ",

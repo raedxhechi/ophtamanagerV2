@@ -50,12 +50,17 @@ export function PrescriptionFields({
         {patient?.zipcode || patient?.city ? joinParts('D', patient?.zipcode, patient?.city) : null}
       </Field>
 
-      {/* Kostenträgerkennung, Versicherten-Nr. */}
+      {/* Kostenträgerkennung, Versicherten-Nr., Status — the row's three
+          columns. Each value starts under its own label in the template, so the
+          Status x tracks that label the way the Versicherten-Nr. above it does. */}
       <Field x={30} y={108}>
         {insurance?.iknumber}
       </Field>
       <Field x={106.7} y={108}>
         {patient?.insurance_number}
+      </Field>
+      <Field x={198.7} y={108}>
+        {patient?.status}
       </Field>
 
       {/* Betriebsstätten-Nr., Arzt-Nr., Datum — the row's three boxes, left to

@@ -82,6 +82,44 @@ export function PatientDetailsDrawer({
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations("component.PatientsTable");
+
+  return (
+    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="!w-[40vw] !max-w-[40vw]">
+        <DrawerHeader className="border-b">
+          <DrawerTitle>{t("details.title")}</DrawerTitle>
+          <DrawerDescription>{t("details.subtitle")}</DrawerDescription>
+        </DrawerHeader>
+
+        {/*
+          The form is a component of its own, keyed by the patient, so it
+          unmounts with the drawer and remounts for a different patient — which
+          is what resets the action's state. Held in this component instead, a
+          successful save would leave `{ success: true }` behind for the rest of
+          the page's life, and the close-on-success effect below would re-fire on
+          the next render and slam the drawer shut the moment another patient was
+          opened.
+        */}
+        {patient && (
+          <PatientEditForm
+            key={patient.id}
+            patient={patient}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+function PatientEditForm({
+  patient,
+  onClose,
+}: {
+  patient: PatientRow;
+  onClose: () => void;
+}) {
+  const t = useTranslations("component.PatientsTable");
   const [state, formAction, isPending] = useActionState(updatePatient, null);
 
   // Insurance companies for the select, fetched once on the client.
@@ -100,215 +138,205 @@ export function PatientDetailsDrawer({
   // Close the drawer once a save succeeds.
   React.useEffect(() => {
     if (state && "success" in state) {
-      onOpenChange(false);
+      onClose();
     }
-  }, [state, onOpenChange]);
+  }, [state, onClose]);
 
   return (
-    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="!w-[40vw] !max-w-[40vw]">
-        <DrawerHeader className="border-b">
-          <DrawerTitle>{t("details.title")}</DrawerTitle>
-          <DrawerDescription>{t("details.subtitle")}</DrawerDescription>
-        </DrawerHeader>
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+      <input type="hidden" name="id" value={patient.id} />
 
-        {patient && (
-          // `key` re-seeds the uncontrolled fields whenever a different
-          // patient is opened without the drawer closing in between.
-          <form
-            key={patient.id}
-            action={formAction}
-            className="flex min-h-0 flex-1 flex-col"
-          >
-            <input type="hidden" name="id" value={patient.id} />
+      <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
+        {/* Personal details */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="last_name">
+              {t("details.last_name")}{" "}
+              <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="last_name"
+              name="last_name"
+              defaultValue={patient.last_name ?? ""}
+              required
+            />
+          </div>
 
-            <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
-              {/* Personal details */}
-              <section className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="last_name">
-                    {t("details.last_name")}{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="last_name"
-                    name="last_name"
-                    defaultValue={patient.last_name ?? ""}
-                    required
-                  />
-                </div>
+          <div className="grid gap-2">
+            <Label htmlFor="first_name">
+              {t("details.first_name")}{" "}
+              <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="first_name"
+              name="first_name"
+              defaultValue={patient.first_name ?? ""}
+              required
+            />
+          </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="first_name">
-                    {t("details.first_name")}{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="first_name"
-                    name="first_name"
-                    defaultValue={patient.first_name ?? ""}
-                    required
-                  />
-                </div>
+          <div className="grid gap-2">
+            <Label htmlFor="date_of_birth">
+              {t("headers.date_of_birth")}{" "}
+              <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="date_of_birth"
+              name="date_of_birth"
+              type="date"
+              defaultValue={toDateInputValue(patient.date_of_birth)}
+              required
+            />
+          </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="date_of_birth">
-                    {t("headers.date_of_birth")}{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="date_of_birth"
-                    name="date_of_birth"
-                    type="date"
-                    defaultValue={toDateInputValue(patient.date_of_birth)}
-                    required
-                  />
-                </div>
+          <div className="grid gap-2">
+            <Label htmlFor="gender">{t("headers.gender")}</Label>
+            <Select name="gender" defaultValue={patient.gender ?? undefined}>
+              <SelectTrigger id="gender" className="w-full">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">male</SelectItem>
+                <SelectItem value="female">female</SelectItem>
+                <SelectItem value="other">other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="gender">{t("headers.gender")}</Label>
-                  <Select name="gender" defaultValue={patient.gender ?? undefined}>
-                    <SelectTrigger id="gender" className="w-full">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">male</SelectItem>
-                      <SelectItem value="female">female</SelectItem>
-                      <SelectItem value="other">other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </section>
-
-              {/* Insurance */}
-              <section className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="insurance_company_id">
-                    {t("headers.insurance_company")}{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  {/* Required: Directus mirrors every patient and its
-                      insuranceCompany column is NOT NULL, so a patient left
-                      without one cannot be copied across. See
-                      directus/mirror.ts. */}
-                  <Select
-                    name="insurance_company_id"
-                    required
-                    defaultValue={patient.insurance_company_id ?? undefined}
-                    disabled={companiesLoading}
-                  >
-                    <SelectTrigger id="insurance_company_id" className="w-full">
-                      <SelectValue
-                        placeholder={companiesLoading ? "Loading…" : "—"}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {companies?.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="insurance_number">
-                    {t("headers.insurance_number")}
-                  </Label>
-                  <Input
-                    id="insurance_number"
-                    name="insurance_number"
-                    defaultValue={patient.insurance_number ?? ""}
-                  />
-                </div>
-              </section>
-
-              {/* Address */}
-              <section className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="street">{t("headers.street")}</Label>
-                  <Input
-                    id="street"
-                    name="street"
-                    defaultValue={patient.street ?? ""}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="house_number">
-                    {t("headers.house_number")}
-                  </Label>
-                  <Input
-                    id="house_number"
-                    name="house_number"
-                    defaultValue={patient.house_number ?? ""}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="zipcode">{t("headers.zipcode")}</Label>
-                  <Input
-                    id="zipcode"
-                    name="zipcode"
-                    defaultValue={patient.zipcode ?? ""}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="city">{t("headers.city")}</Label>
-                  <Input
-                    id="city"
-                    name="city"
-                    defaultValue={patient.city ?? ""}
-                  />
-                </div>
-              </section>
-
-              {/* Read-only system fields */}
-              <section className="grid gap-4 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2">
-                <ReadOnlyRow label={t("details.uuid")} value={patient.id} />
-                <ReadOnlyRow
-                  label={t("details.directus_id")}
-                  value={patient.directus_id}
+        {/* Insurance */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="insurance_company_id">
+              {t("headers.insurance_company")}{" "}
+              <span className="text-destructive">*</span>
+            </Label>
+            {/* Required: Directus mirrors every patient and its
+                insuranceCompany column is NOT NULL, so a patient left
+                without one cannot be copied across. See
+                directus/mirror.ts. */}
+            <Select
+              name="insurance_company_id"
+              required
+              defaultValue={patient.insurance_company_id ?? undefined}
+              disabled={companiesLoading}
+            >
+              <SelectTrigger id="insurance_company_id" className="w-full">
+                <SelectValue
+                  placeholder={companiesLoading ? "Loading…" : "—"}
                 />
-                <ReadOnlyRow
-                  label={t("details.created_at")}
-                  value={formatDateTime(patient.created_at) || null}
-                />
-              </section>
+              </SelectTrigger>
+              <SelectContent>
+                {companies?.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-              {state && "error" in state ? (
-                <p className="text-sm text-destructive">{state.error}</p>
-              ) : null}
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="insurance_number">
+              {t("headers.insurance_number")}
+            </Label>
+            <Input
+              id="insurance_number"
+              name="insurance_number"
+              defaultValue={patient.insurance_number ?? ""}
+            />
+          </div>
 
-            <DrawerFooter className="flex-row justify-end gap-2 border-t">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-              >
-                {t("details.cancel")}
-              </Button>
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    {t("details.saving")}
-                  </>
-                ) : (
-                  t("details.save")
-                )}
-              </Button>
-            </DrawerFooter>
-          </form>
-        )}
-      </DrawerContent>
-    </Drawer>
+          {/* The Muster 16 "Status" box, printed beside the
+              Versicherten-Nr. on the IVOM and GKV pads. */}
+          <div className="grid gap-2">
+            <Label htmlFor="status">{t("headers.status")}</Label>
+            <Input
+              id="status"
+              name="status"
+              defaultValue={patient.status ?? ""}
+            />
+          </div>
+        </section>
+
+        {/* Address */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="street">{t("headers.street")}</Label>
+            <Input
+              id="street"
+              name="street"
+              defaultValue={patient.street ?? ""}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="house_number">
+              {t("headers.house_number")}
+            </Label>
+            <Input
+              id="house_number"
+              name="house_number"
+              defaultValue={patient.house_number ?? ""}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="zipcode">{t("headers.zipcode")}</Label>
+            <Input
+              id="zipcode"
+              name="zipcode"
+              defaultValue={patient.zipcode ?? ""}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="city">{t("headers.city")}</Label>
+            <Input
+              id="city"
+              name="city"
+              defaultValue={patient.city ?? ""}
+            />
+          </div>
+        </section>
+
+        {/* Read-only system fields */}
+        <section className="grid gap-4 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2">
+          <ReadOnlyRow label={t("details.uuid")} value={patient.id} />
+          <ReadOnlyRow
+            label={t("details.directus_id")}
+            value={patient.directus_id}
+          />
+          <ReadOnlyRow
+            label={t("details.created_at")}
+            value={formatDateTime(patient.created_at) || null}
+          />
+        </section>
+
+        {state && "error" in state ? (
+          <p className="text-sm text-destructive">{state.error}</p>
+        ) : null}
+      </div>
+
+      <DrawerFooter className="flex-row justify-end gap-2 border-t">
+        <Button type="button" variant="ghost" onClick={onClose}>
+          {t("details.cancel")}
+        </Button>
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="bg-blue-600 text-white hover:bg-blue-700"
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              {t("details.saving")}
+            </>
+          ) : (
+            t("details.save")
+          )}
+        </Button>
+      </DrawerFooter>
+    </form>
   );
 }

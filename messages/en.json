@@ -208,6 +208,7 @@
         "insurance_company": "Insurance company",
         "insurance_type": "Insurance type",
         "insurance_number": "Insurance number",
+        "status": "Status",
         "city": "City",
         "street": "Street",
         "house_number": "House number",
@@ -254,6 +255,7 @@
           "empty": "No companies for this type"
         },
         "insurance_number": "Insurance number",
+        "status": "Status",
         "street": "Street",
         "house_number": "House number",
         "zipcode": "Zipcode",

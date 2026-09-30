@@ -163,6 +163,17 @@ export function PatientFields({
             defaultValue={patient?.insurance_number ?? ""}
           />
         </div>
+
+        {/* The Muster 16 "Status" box, printed beside the Versicherten-Nr. on
+            the IVOM and GKV pads. */}
+        <div className="grid gap-2">
+          <Label htmlFor="status">Status</Label>
+          <Input
+            id="status"
+            name="status"
+            defaultValue={patient?.status ?? ""}
+          />
+        </div>
       </section>
 
       {/* Address */}

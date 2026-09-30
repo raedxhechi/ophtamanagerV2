@@ -445,6 +445,7 @@ export type Database = {
           insurance_number: string | null
           last_name: string
           search_text: string | null
+          status: string | null
           street: string | null
           updated_at: string
           zipcode: string | null
@@ -463,6 +464,7 @@ export type Database = {
           insurance_number?: string | null
           last_name: string
           search_text?: string | null
+          status?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
@@ -481,6 +483,7 @@ export type Database = {
           insurance_number?: string | null
           last_name?: string
           search_text?: string | null
+          status?: string | null
           street?: string | null
           updated_at?: string
           zipcode?: string | null
