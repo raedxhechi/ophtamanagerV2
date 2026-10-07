@@ -208,6 +208,7 @@
         "insurance_company": "Insurance company",
         "insurance_type": "Insurance type",
         "insurance_number": "Insurance number",
+        "status": "Status",
         "city": "City",
         "street": "Street",
         "house_number": "House number",
@@ -254,6 +255,7 @@
           "empty": "No companies for this type"
         },
         "insurance_number": "Insurance number",
+        "status": "Status",
         "street": "Street",
         "house_number": "House number",
         "zipcode": "Zipcode",
@@ -276,7 +278,19 @@
     },
     "OrderDataTableRowActions": {
       "orderDetails": "Order",
-      "hideDetails": "Hide"
+      "hideDetails": "Hide",
+      "prescriptions": "Prescriptions",
+      "print": "Print",
+      "printWithoutTemplateHint": "The preview shows the form; printing leaves it out.",
+      "printing": "Printing...",
+      "noPrescriptionsForPad": "No prescriptions for this pad.",
+      "layout": "Template",
+      "suborderNotFound": "This suborder does not belong to the order.",
+      "layouts": {
+        "ivom": "IVOM",
+        "gkv": "GKV",
+        "privat": "Privat"
+      }
     }
   }
 }

@@ -202,6 +202,7 @@ function AdminUserForm({
             defaultOfficeIds={user.offices.map((office) => office.id)}
             defaultFirstName={user.first_name}
             defaultLastName={user.last_name}
+            defaultDoctorNumber={user.doctor_number}
           />
 
           <section className="grid gap-4 border-t pt-4 sm:grid-cols-2">

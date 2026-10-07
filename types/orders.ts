@@ -29,9 +29,13 @@ type PatientWithInsurance = PatientRow & {
  * `doctor_office (*, pharmacy:pharmacies (*))`. `pharmacy` is a to-one relation
  * (doctor_office.pharmacy_id), and is null for an office with no pharmacy
  * assigned yet — the column is nullable.
+ *
+ * `default_doctor` is doctor_office.default_doctor_id embedded as its user_data
+ * row. Null when the office has none, or when RLS hides the row from the reader.
  */
 type OfficeWithPharmacy = DoctorOfficeRow & {
   pharmacy: PharmacyRow | null;
+  default_doctor: UserDataRow | null;
 };
 
 /**

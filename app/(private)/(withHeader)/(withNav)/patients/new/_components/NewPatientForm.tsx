@@ -185,6 +185,13 @@ export function NewPatientForm() {
           </Label>
           <Input id="insurance_number" name="insurance_number" />
         </div>
+
+        {/* The Muster 16 "Status" box, printed beside the Versicherten-Nr. on
+            the IVOM and GKV pads. */}
+        <div className="grid gap-2">
+          <Label htmlFor="status">{t("fields.status")}</Label>
+          <Input id="status" name="status" />
+        </div>
       </section>
 
       {/* Address */}

@@ -58,6 +58,11 @@ const columns: ColumnDef<AdminDoctorOfficeRow>[] = [
     cell: ({ row }) => orDash(row.original.contact_person),
   },
   {
+    accessorKey: "bsnr",
+    header: "BSNR",
+    cell: ({ row }) => orDash(row.original.bsnr),
+  },
+  {
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => orDash(row.original.email),

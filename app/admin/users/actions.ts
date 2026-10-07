@@ -171,6 +171,22 @@ function resolveActiveOffice(
 }
 
 /**
+ * The doctor number, as the part of the row it belongs in.
+ *
+ * Only a doctor has one, and the field only shows for doctors. For any other
+ * role the column is left out of the write rather than cleared, so a role
+ * changed by mistake and changed back does not cost the number that was there.
+ */
+function doctorNumberColumn(
+  formData: FormData,
+  role: UserRole
+): { doctor_number?: string | null } {
+  return role === "doctor"
+    ? { doctor_number: field(formData, "doctor_number") }
+    : {};
+}
+
+/**
  * Bring public.user_office_access in line with the offices the form ticked.
  *
  * Runs *after* the user_data write, never before: that write fires
@@ -305,6 +321,7 @@ export async function inviteUser(
     doctor_office_id: assignment.doctor_office_id,
     first_name,
     last_name,
+    ...doctorNumberColumn(formData, assignment.role),
   });
 
   if (profileError) {
@@ -337,7 +354,7 @@ export async function inviteUser(
 }
 
 /**
- * Save a user's profile: role, office and name.
+ * Save a user's profile: role, office, name and doctor number.
  *
  * An upsert rather than an update — an account created straight from the
  * Supabase dashboard has no user_data row at all, and this drawer is where it
@@ -384,6 +401,7 @@ export async function updateUserProfile(
       doctor_office_id: assignment.doctor_office_id,
       first_name: field(formData, "first_name"),
       last_name: field(formData, "last_name"),
+      ...doctorNumberColumn(formData, assignment.role),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" }

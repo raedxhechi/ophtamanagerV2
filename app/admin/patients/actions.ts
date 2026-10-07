@@ -25,6 +25,7 @@ function patientColumns(formData: FormData) {
     gender: (field(formData, "gender") as Gender | null) ?? null,
     insurance_number: field(formData, "insurance_number"),
     insurance_company_id: field(formData, "insurance_company_id"),
+    status: field(formData, "status"),
     city: field(formData, "city"),
     street: field(formData, "street"),
     house_number: field(formData, "house_number"),

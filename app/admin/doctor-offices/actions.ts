@@ -32,6 +32,8 @@ export type SaveOfficeState =
     }
   | null;
 
+export type SaveDoctorState = { error: string } | { success: true } | null;
+
 /** Trim a FormData string field, returning null when empty. */
 function field(formData: FormData, key: string): string | null {
   const value = formData.get(key);
@@ -76,6 +78,7 @@ async function requireAdmin(
 type OfficeInput = {
   name: string;
   contact_person: string | null;
+  bsnr: string | null;
   email: string | null;
   phone_number: string | null;
   street: string | null;
@@ -92,6 +95,9 @@ type OfficeInput = {
  * pharmacy on insert (20260826150000_doctor_office_joins_default_pharmacy.sql)
  * and moving it between pharmacies is not something this screen offers — the
  * pharmacies screen shows the same link from the other side, also read-only.
+ *
+ * Nor is `default_doctor_id`: it has to wait until the people in the office are
+ * settled, which is after this write — see applyDefaultDoctor().
  */
 function parseOffice(formData: FormData): { error: string } | OfficeInput {
   const name = field(formData, "name");
@@ -110,6 +116,7 @@ function parseOffice(formData: FormData): { error: string } | OfficeInput {
   return {
     name,
     contact_person: field(formData, "contact_person"),
+    bsnr: field(formData, "bsnr"),
     email,
     phone_number: field(formData, "phone_number"),
     street: field(formData, "street"),
@@ -161,6 +168,14 @@ function labelFor(profile: {
  * thing — so those come back as warnings and the row is left as it was. The
  * drawer disables those checkboxes, so getting one here means the page was
  * stale; the office's own save still stands.
+ *
+ * A form that carries no `member_ids` field at all is saying nothing about who
+ * works here, and membership is left exactly as it is. That is what the office
+ * drawer does today — it lists the office's users read-only, and people are
+ * moved between offices from /admin/users. Note the difference from a form that
+ * *does* carry the field with nothing in it: that one means "nobody", and still
+ * empties the office. Were the picker to come back, it would submit the field
+ * again and every line below would apply unchanged.
  */
 async function applyMembership(
   supabase: SupabaseClient,
@@ -168,6 +183,8 @@ async function applyMembership(
   formData: FormData
 ): Promise<string[]> {
   const warnings: string[] = [];
+
+  if (!formData.has("member_ids")) return warnings;
 
   const wanted = new Set(
     formData
@@ -314,6 +331,42 @@ async function removeFromOffice(
   }
 
   return null;
+}
+
+/**
+ * Point the office at its default doctor, once the people in it are settled.
+ *
+ * A write of its own, after applyMembership() rather than alongside the
+ * office's other fields: the database refuses anyone but a doctor who already
+ * works here (doctor_office_check_default_doctor(), 20260914120000), and a
+ * doctor ticked in this same save only does once the membership is applied. A
+ * refusal comes back as a warning, like a refused assignment — the office itself
+ * is already saved.
+ *
+ * Nothing is written when the pick is the one the office already has, so
+ * re-saving doesn't move its "last changed" for a write that says nothing new.
+ */
+async function applyDefaultDoctor(
+  supabase: SupabaseClient,
+  officeId: string,
+  currentDoctorId: string | null,
+  formData: FormData
+): Promise<string[]> {
+  const picked = field(formData, "default_doctor_id");
+  if (picked === currentDoctorId) return [];
+
+  if (picked && !UUID.test(picked)) {
+    return ["The default doctor could not be identified, so it was not changed."];
+  }
+
+  const { error } = await supabase
+    .from("doctor_office")
+    .update({ default_doctor_id: picked, updated_at: new Date().toISOString() })
+    .eq("id", officeId);
+
+  return error
+    ? [`The default doctor could not be saved (${error.message}).`]
+    : [];
 }
 
 /**
@@ -465,6 +518,13 @@ export async function createDoctorOffice(
   if (error) return { error: error.message };
 
   const warnings = await applyMembership(supabase, created.id, formData);
+  // A new office has no default doctor yet, so any pick is a change.
+  const doctorWarnings = await applyDefaultDoctor(
+    supabase,
+    created.id,
+    null,
+    formData
+  );
   const { invited, warnings: inviteWarnings } = await sendQueuedInvites(
     supabase,
     created.id,
@@ -478,7 +538,7 @@ export async function createDoctorOffice(
     id: created.id,
     created: true,
     invited,
-    warnings: [...warnings, ...inviteWarnings],
+    warnings: [...warnings, ...doctorWarnings, ...inviteWarnings],
   };
 }
 
@@ -513,7 +573,7 @@ export async function updateDoctorOffice(
     .from("doctor_office")
     .update({ ...office, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .select("id")
+    .select("id, default_doctor_id")
     .maybeSingle();
 
   if (error) return { error: error.message };
@@ -524,6 +584,12 @@ export async function updateDoctorOffice(
   }
 
   const warnings = await applyMembership(supabase, id, formData);
+  const doctorWarnings = await applyDefaultDoctor(
+    supabase,
+    id,
+    saved.default_doctor_id,
+    formData
+  );
   const { invited, warnings: inviteWarnings } = await sendQueuedInvites(
     supabase,
     id,
@@ -537,6 +603,65 @@ export async function updateDoctorOffice(
     id,
     created: false,
     invited,
-    warnings: [...warnings, ...inviteWarnings],
+    warnings: [...warnings, ...doctorWarnings, ...inviteWarnings],
   };
+}
+
+/**
+ * Just the doctor's own details, as the nested drawer on the office screen
+ * submits them.
+ *
+ * Deliberately not updateUserProfile(): that one owns the role and the office
+ * assignment and refuses a form that leaves them out. Here the admin is looking
+ * at an office, not at an account — the only question is what the prescription
+ * prints, so the role and every office link are left exactly as they are.
+ */
+export async function updateDoctorDetails(
+  _prev: SaveDoctorState,
+  formData: FormData
+): Promise<SaveDoctorState> {
+  const supabase = await createClient();
+  const guard = await requireAdmin(supabase, "edit a doctor");
+  if ("error" in guard) return guard;
+
+  const id = field(formData, "id");
+  if (!id || !UUID.test(id)) {
+    return { error: "Missing doctor id." };
+  }
+
+  // Read the role back rather than trusting the form: doctor_number is only a
+  // doctor's column, and this drawer is only ever opened on one.
+  const { data: existing, error: readError } = await supabase
+    .from("user_data")
+    .select("role")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (readError) {
+    return { error: readError.message };
+  }
+  if (!existing) {
+    return { error: "That doctor no longer exists." };
+  }
+  if (existing.role !== "doctor") {
+    return { error: "That account is not a doctor." };
+  }
+
+  const { error } = await supabase
+    .from("user_data")
+    .update({
+      first_name: field(formData, "first_name"),
+      last_name: field(formData, "last_name"),
+      doctor_number: field(formData, "doctor_number"),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/admin/doctor-offices");
+  revalidatePath("/admin/users");
+  return { success: true };
 }

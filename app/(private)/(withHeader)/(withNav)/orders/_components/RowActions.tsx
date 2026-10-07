@@ -4,7 +4,7 @@ import { Row } from '@tanstack/react-table'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { ArrowUpRightFromSquare, ChevronDown, CircleSlash, Printer } from 'lucide-react'
+import { ArrowUpRightFromSquare, ChevronDown, CircleSlash, FileText, Printer } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import styles from './wiggle.module.css'
@@ -37,7 +37,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     }
   }
   return (
-    <div className={cn('flex items-center space-x-2 w-[200px]')}>
+    <div className={cn('flex items-center space-x-2 w-[250px]')}>
       {row.getIsExpanded() ? (
         <Button variant='secondary' onClick={handleClick}>
           <>
@@ -84,6 +84,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       <Link href={`/order/${row.original.id}/print`} target='_blank' rel='noopener noreferrer'>
         <Button variant='default'>
           <Printer />
+        </Button>
+      </Link>
+      <Link href={`/order/${row.original.id}/prescriptions`} target='_blank' rel='noopener noreferrer'>
+        <Button variant='default' title={t('component.OrderDataTableRowActions.prescriptions')}>
+          <FileText />
         </Button>
       </Link>
     </div>
