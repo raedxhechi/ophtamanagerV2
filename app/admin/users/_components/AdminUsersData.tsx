@@ -20,6 +20,8 @@ export type AdminUserRow = {
   email: string | null;
   first_name: string | null;
   last_name: string | null;
+  /** Only a doctor is given one — see doctorNumberColumn() in ../actions.ts. */
+  doctor_number: string | null;
   /** null when the account has no user_data row yet. */
   role: UserRole | null;
   /** The active office — where this account's new patients and orders land. */
@@ -138,6 +140,7 @@ export async function AdminUsersData() {
       email: user.email ?? profile?.email ?? null,
       first_name: profile?.first_name ?? null,
       last_name: profile?.last_name ?? null,
+      doctor_number: profile?.doctor_number ?? null,
       role: profile?.role ?? null,
       doctor_office: profile?.doctor_office ?? null,
       offices: accessByUser.get(user.id) ?? [],

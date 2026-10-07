@@ -19,11 +19,21 @@ import { mirrorToDirectus } from './directusMirror'
 // address on the receipt. The office's pharmacy comes along with it — the
 // receipt prints it as the recipient — aliased to the singular `pharmacy` key,
 // since it's a to-one relation.
+//
+// The office's default doctor is what the prescription PDF prints as the
+// prescriber. doctor_office and user_data point at each other both ways
+// (user_data.doctor_office_id, doctor_office.default_doctor_id), so the embed
+// names its foreign key. RLS shows it to that office's users and to admins; a
+// manager viewing another office's order gets null.
 const ORDER_SELECT = `
   *,
   medicine (*),
   created_by:user_data (*),
-  doctor_office (*, pharmacy:pharmacies (*)),
+  doctor_office (
+    *,
+    pharmacy:pharmacies (*),
+    default_doctor:user_data!doctor_office_default_doctor_id_fkey (*)
+  ),
   suborders (
     *,
     patient:patients (

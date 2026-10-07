@@ -89,6 +89,9 @@ export async function OrdersData({
       // Decided on the server, where the role is already known — the private
       // area has no user store to read it from on the client.
       canEditStatus={canEditOrderStatus(role)}
+      // Prescriptions are an admin's job alone — decided here for the same
+      // reason as canEditStatus.
+      canPrintPrescriptions={role === "admin"}
     />
   );
 }

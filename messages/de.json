@@ -208,6 +208,7 @@
         "insurance_company": "Krankenkasse",
         "insurance_type": "Versicherungsart",
         "insurance_number": "Versichertennummer",
+        "status": "Status",
         "city": "Stadt",
         "street": "Straße",
         "house_number": "Hausnummer",
@@ -254,6 +255,7 @@
           "empty": "Keine Krankenkassen für diese Versicherungsart"
         },
         "insurance_number": "Versichertennummer",
+        "status": "Status",
         "street": "Straße",
         "house_number": "Hausnummer",
         "zipcode": "PLZ",
@@ -276,7 +278,19 @@
     },
     "OrderDataTableRowActions": {
       "orderDetails": "Bestellung",
-      "hideDetails": "Ausblenden"
+      "hideDetails": "Ausblenden",
+      "prescriptions": "Rezepte",
+      "print": "Drucken",
+      "printWithoutTemplateHint": "Die Vorschau zeigt das Formular, gedruckt wird ohne.",
+      "printing": "Druckt...",
+      "noPrescriptionsForPad": "Keine Rezepte für diesen Block.",
+      "layout": "Vorlage",
+      "suborderNotFound": "Diese Unterbestellung gehört nicht zur Bestellung.",
+      "layouts": {
+        "ivom": "IVOM",
+        "gkv": "GKV",
+        "privat": "Privat"
+      }
     }
   }
 }

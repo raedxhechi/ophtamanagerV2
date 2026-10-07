@@ -101,24 +101,6 @@ export function AdminPatientDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [state, formAction, isPending] = useActionState(
-    updatePatientAsAdmin,
-    null
-  );
-
-  // Close the drawer once a save succeeds.
-  React.useEffect(() => {
-    if (state && "success" in state) onOpenChange(false);
-  }, [state, onOpenChange]);
-
-  const suborders = React.useMemo(
-    () =>
-      [...(patient?.suborders ?? [])].sort((a, b) =>
-        (b.order?.created_at ?? "").localeCompare(a.order?.created_at ?? "")
-      ),
-    [patient]
-  );
-
   return (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="!w-[46vw] !max-w-[46vw]">
@@ -129,116 +111,149 @@ export function AdminPatientDrawer({
           </DrawerDescription>
         </DrawerHeader>
 
+        {/*
+          The form is a component of its own, keyed by the patient, so it
+          unmounts with the drawer and remounts for a different patient — which
+          is what resets the action's state, and re-seeds the uncontrolled
+          fields. Held in this component instead, a successful save would leave
+          `{ success: true }` behind for the rest of the page's life, and the
+          close-on-success effect would re-fire on the next render and slam the
+          drawer shut the moment another patient was opened.
+        */}
         {patient && (
-          // `key` re-seeds the uncontrolled fields whenever a different patient
-          // is opened without the drawer closing in between.
-          <form
+          <AdminPatientEditForm
             key={patient.id}
-            action={formAction}
-            className="flex min-h-0 flex-1 flex-col"
-          >
-            <input type="hidden" name="id" value={patient.id} />
-
-            <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
-              <PatientFields patient={patient} />
-
-              {/* Suborders */}
-              <section className="space-y-2">
-                <h3 className="text-sm font-medium">
-                  Suborders{" "}
-                  <span className="text-muted-foreground tabular-nums">
-                    ({suborders.length})
-                  </span>
-                </h3>
-                {suborders.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">
-                    This patient has no suborders yet.
-                  </p>
-                ) : (
-                  <ul className="divide-y rounded-lg border">
-                    {suborders.map((suborder) => (
-                      <li
-                        key={suborder.id}
-                        className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5"
-                      >
-                        <div className="flex min-w-0 flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {suborder.order?.medicine?.name ?? "—"}
-                            </Badge>
-                            {suborder.invoice_type && (
-                              <Badge variant="secondary">
-                                {suborder.invoice_type}
-                              </Badge>
-                            )}
-                          </div>
-                          <span className="text-muted-foreground text-xs">
-                            Created{" "}
-                            {formatDate(suborder.order?.created_at ?? null) ||
-                              "—"}
-                            {" · OP "}
-                            {formatDate(
-                              suborder.order?.application_date ?? null
-                            ) || "—"}
-                            {" · Delivery "}
-                            {formatDate(
-                              suborder.order?.delivery_date ?? null
-                            ) || "—"}
-                          </span>
-                        </div>
-                        <EyeBadges suborder={suborder} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              {/* Read-only system fields. The office is shown but not editable:
-                  moving a patient between offices would strand the suborders
-                  hanging off their old office's orders. */}
-              <section className="bg-muted/30 grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
-                <ReadOnlyRow
-                  label="Doctor office"
-                  value={patient.doctor_office?.name ?? null}
-                />
-                <ReadOnlyRow label="UUID" value={patient.id} />
-                <ReadOnlyRow
-                  label="Directus id"
-                  value={patient.directus_id}
-                />
-                <ReadOnlyRow
-                  label="Created"
-                  value={formatDateTime(patient.created_at) || null}
-                />
-              </section>
-
-              {state && "error" in state ? (
-                <p className="text-destructive text-sm">{state.error}</p>
-              ) : null}
-            </div>
-
-            <DrawerFooter className="flex-row justify-end gap-2 border-t">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  "Save changes"
-                )}
-              </Button>
-            </DrawerFooter>
-          </form>
+            patient={patient}
+            onClose={() => onOpenChange(false)}
+          />
         )}
       </DrawerContent>
     </Drawer>
+  );
+}
+
+function AdminPatientEditForm({
+  patient,
+  onClose,
+}: {
+  patient: AdminPatientRow;
+  onClose: () => void;
+}) {
+  const [state, formAction, isPending] = useActionState(
+    updatePatientAsAdmin,
+    null
+  );
+
+  // Close the drawer once a save succeeds.
+  React.useEffect(() => {
+    if (state && "success" in state) onClose();
+  }, [state, onClose]);
+
+  const suborders = React.useMemo(
+    () =>
+      [...patient.suborders].sort((a, b) =>
+        (b.order?.created_at ?? "").localeCompare(a.order?.created_at ?? "")
+      ),
+    [patient]
+  );
+
+  return (
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+      <input type="hidden" name="id" value={patient.id} />
+
+      <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
+        <PatientFields patient={patient} />
+
+        {/* Suborders */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium">
+            Suborders{" "}
+            <span className="text-muted-foreground tabular-nums">
+              ({suborders.length})
+            </span>
+          </h3>
+          {suborders.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              This patient has no suborders yet.
+            </p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {suborders.map((suborder) => (
+                <li
+                  key={suborder.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5"
+                >
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {suborder.order?.medicine?.name ?? "—"}
+                      </Badge>
+                      {suborder.invoice_type && (
+                        <Badge variant="secondary">
+                          {suborder.invoice_type}
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-muted-foreground text-xs">
+                      Created{" "}
+                      {formatDate(suborder.order?.created_at ?? null) ||
+                        "—"}
+                      {" · OP "}
+                      {formatDate(
+                        suborder.order?.application_date ?? null
+                      ) || "—"}
+                      {" · Delivery "}
+                      {formatDate(
+                        suborder.order?.delivery_date ?? null
+                      ) || "—"}
+                    </span>
+                  </div>
+                  <EyeBadges suborder={suborder} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Read-only system fields. The office is shown but not editable:
+            moving a patient between offices would strand the suborders
+            hanging off their old office's orders. */}
+        <section className="bg-muted/30 grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
+          <ReadOnlyRow
+            label="Doctor office"
+            value={patient.doctor_office?.name ?? null}
+          />
+          <ReadOnlyRow label="UUID" value={patient.id} />
+          <ReadOnlyRow
+            label="Directus id"
+            value={patient.directus_id}
+          />
+          <ReadOnlyRow
+            label="Created"
+            value={formatDateTime(patient.created_at) || null}
+          />
+        </section>
+
+        {state && "error" in state ? (
+          <p className="text-destructive text-sm">{state.error}</p>
+        ) : null}
+      </div>
+
+      <DrawerFooter className="flex-row justify-end gap-2 border-t">
+        <Button type="button" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            "Save changes"
+          )}
+        </Button>
+      </DrawerFooter>
+    </form>
   );
 }

@@ -14,6 +14,7 @@ import {
   IconSettings,
   IconShieldCheck,
   IconStethoscope,
+  IconUmbrella,
   IconUsers,
 } from "@tabler/icons-react";
 
@@ -58,6 +59,11 @@ const data = {
       title: "Policies",
       url: "/admin/policies",
       icon: IconShieldCheck,
+    },
+    {
+      title: "Insurances",
+      url: "/admin/insurances",
+      icon: IconUmbrella,
     },
     {
       title: "Pharmacies",
