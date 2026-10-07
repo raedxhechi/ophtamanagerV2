@@ -15,11 +15,9 @@ import { OrderWithSubOrders } from '@/types'
 
 interface DataTableRowActionsProps {
   row: Row<OrderWithSubOrders>
-  /** Show the prescriptions action — admins only, decided on the server. */
-  canPrintPrescriptions: boolean
 }
 
-export function DataTableRowActions({ row, canPrintPrescriptions }: DataTableRowActionsProps) {
+export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 //   const { setexportOrderModal } = useAppStore((state) => state)
   const order = row.original
   const [isWiggling, setIsWiggling] = useState(false)
@@ -88,13 +86,11 @@ export function DataTableRowActions({ row, canPrintPrescriptions }: DataTableRow
           <Printer />
         </Button>
       </Link>
-      {canPrintPrescriptions && (
-        <Link href={`/order/${row.original.id}/prescriptions`} target='_blank' rel='noopener noreferrer'>
-          <Button variant='default' title={t('component.OrderDataTableRowActions.prescriptions')}>
-            <FileText />
-          </Button>
-        </Link>
-      )}
+      <Link href={`/order/${row.original.id}/prescriptions`} target='_blank' rel='noopener noreferrer'>
+        <Button variant='default' title={t('component.OrderDataTableRowActions.prescriptions')}>
+          <FileText />
+        </Button>
+      </Link>
     </div>
   )
 }

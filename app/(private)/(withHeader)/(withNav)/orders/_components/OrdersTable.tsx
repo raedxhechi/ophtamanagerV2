@@ -50,7 +50,7 @@ export type OrderRow = OrderWithSubOrders;
  * module constant — useTableSettings keys its derived state off that identity,
  * and rebuilding the array each render would reset the saved column layout.
  */
-type OrdersTableMeta = { canEditStatus: boolean; canPrintPrescriptions: boolean };
+type OrdersTableMeta = { canEditStatus: boolean };
 
 /** "application_date" -> "Application date" for the column-visibility menu. */
 function prettify(id: string): string {
@@ -107,12 +107,7 @@ const columns: ColumnDef<OrderRow>[] = [
   },
      {
       id: 'actions',
-      cell: ({ row, table }) => (
-        <DataTableRowActions
-          row={row}
-          canPrintPrescriptions={(table.options.meta as OrdersTableMeta).canPrintPrescriptions}
-        />
-      ),
+      cell: ({ row }) => <DataTableRowActions row={row} />,
     },
 ];
 
@@ -132,7 +127,6 @@ export function OrdersTable({
   pageSize,
   search,
   canEditStatus,
-  canPrintPrescriptions,
 }: {
   data: OrderRow[];
   /** 1-based index of the currently loaded page. */
@@ -150,8 +144,6 @@ export function OrdersTable({
    * admin or a manager, who are the only roles RLS lets update an order.
    */
   canEditStatus: boolean;
-  /** Whether each row offers the prescriptions action — admins only. */
-  canPrintPrescriptions: boolean;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -214,7 +206,7 @@ export function OrdersTable({
   const table = useReactTable({
     data,
     columns,
-    meta: { canEditStatus, canPrintPrescriptions } satisfies OrdersTableMeta,
+    meta: { canEditStatus } satisfies OrdersTableMeta,
     state: { sorting, ...columnSettings },
     getRowId: (row) => row.id,
     onSortingChange: setSorting,
@@ -314,7 +306,6 @@ export function OrdersTable({
                             ...suborder,
                             order: row.original,
                           }))}
-                          canPrintPrescriptions={canPrintPrescriptions}
                         />
                       </div>
                     </TableCell>
