@@ -16,11 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDateFromString } from '@/lib/utils'
 
-/**
- * @param canPrintPrescriptions show the prescription action — admins only,
- *   decided on the server and passed down from the orders table.
- */
-export const useColumns = (hideActions?: boolean, canPrintPrescriptions?: boolean) => {
+export const useColumns = (hideActions?: boolean) => {
   const columns: ColumnDef<SubOrder>[] = [
     {
       accessorKey: 'Name',
@@ -109,17 +105,15 @@ export const useColumns = (hideActions?: boolean, canPrintPrescriptions?: boolea
             </Button>
           </Link>
           {/* The order's prescriptions page, narrowed to this one suborder. */}
-          {canPrintPrescriptions && (
-            <Link
-              href={`/order/${row.original.order_id}/prescriptions?suborder=${row.original.id}`}
-              target='_blank'
-              rel='noopener noreferrer'
-            >
-              <Button variant='outline'>
-                <FileText />
-              </Button>
-            </Link>
-          )}
+          <Link
+            href={`/order/${row.original.order_id}/prescriptions?suborder=${row.original.id}`}
+            target='_blank'
+            rel='noopener noreferrer'
+          >
+            <Button variant='outline'>
+              <FileText />
+            </Button>
+          </Link>
         </div>
       ),
     }
