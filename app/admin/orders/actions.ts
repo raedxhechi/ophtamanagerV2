@@ -212,3 +212,57 @@ export async function deleteOrderAsAdmin(
   revalidatePath("/admin/orders");
   return { success: true, subOrders: deletedSubOrders?.length ?? 0 };
 }
+
+export type DeleteSubOrderResult = { error: string } | { success: true };
+
+/**
+ * Delete a single suborder out of an order.
+ *
+ * Called straight from the drawer rather than through a form: the suborder
+ * rows live inside the order's edit form, and a second form nested in that one
+ * is invalid HTML. The order id is passed alongside so the delete can be
+ * pinned to it — the same belt and braces the suborder update uses, which
+ * stops an id smuggled in from elsewhere being deleted through this action.
+ */
+export async function deleteSubOrderAsAdmin(
+  subOrderId: string,
+  orderId: string
+): Promise<DeleteSubOrderResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { error: "You need an admin account to delete suborders." };
+  }
+
+  if (!subOrderId || !orderId) {
+    return { error: "Missing suborder id." };
+  }
+
+  const { data: deleted, error } = await supabase
+    .from("suborders")
+    .delete()
+    .eq("id", subOrderId)
+    .eq("order_id", orderId)
+    .select("id");
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // RLS reports a refusal as nothing matched, same as a row that is already
+  // gone — either way the caller shouldn't be told it worked.
+  if (!deleted || deleted.length === 0) {
+    return { error: "That suborder no longer exists, or you can't delete it." };
+  }
+
+  revalidatePath("/admin/orders");
+  return { success: true };
+}

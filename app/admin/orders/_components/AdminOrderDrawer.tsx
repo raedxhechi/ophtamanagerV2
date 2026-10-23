@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Trash2 } from "lucide-react";
+import { Check, Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { formatDate } from "@/lib/date";
@@ -44,8 +44,10 @@ import {
 
 import {
   deleteOrderAsAdmin,
+  deleteSubOrderAsAdmin,
   updateOrderAsAdmin,
   type DeleteOrderState,
+  type UpdateOrderState,
 } from "../actions";
 import type { AdminOrderRow, AdminOrderSubOrder } from "./AdminOrdersData";
 import { INVOICE_TYPES, NO_INVOICE_TYPE } from "./invoiceType";
@@ -93,11 +95,99 @@ function ReadOnlyRow({
 }
 
 /**
+ * Delete a suborder in two deliberate clicks. The first arms it: the trash can
+ * is replaced *in place* by the cancel, and the confirm appears to its right —
+ * so the second click lands somewhere the cursor isn't already resting, and a
+ * double click on the trash can't delete anything. The slot keeps its width
+ * either way, so arming one row doesn't shift the rest.
+ */
+function DeleteSubOrderButton({
+  subOrderId,
+  orderId,
+  onDeleted,
+}: {
+  subOrderId: string;
+  orderId: string;
+  onDeleted: (subOrderId: string) => void;
+}) {
+  const [armed, setArmed] = React.useState(false);
+  const [isDeleting, startDeleting] = React.useTransition();
+
+  function confirm() {
+    startDeleting(async () => {
+      const result = await deleteSubOrderAsAdmin(subOrderId, orderId);
+      if ("error" in result) {
+        toast.error("Suborder not deleted", { description: result.error });
+        setArmed(false);
+        return;
+      }
+      toast.success("Suborder deleted");
+      onDeleted(subOrderId);
+    });
+  }
+
+  return (
+    <div className="flex w-[4.25rem] items-center gap-1">
+      {armed ? (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            title="Keep this suborder"
+            aria-label="Keep this suborder"
+            disabled={isDeleting}
+            onClick={() => setArmed(false)}
+          >
+            <X className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="icon-sm"
+            title="Confirm deletion"
+            aria-label="Confirm deleting this suborder"
+            disabled={isDeleting}
+            onClick={confirm}
+          >
+            {isDeleting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Check className="size-4" />
+            )}
+          </Button>
+        </>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground hover:text-destructive"
+          title="Delete this suborder"
+          aria-label="Delete this suborder"
+          onClick={() => setArmed(true)}
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/**
  * One suborder's editable row: which eyes it covers and how it is invoiced. The
  * patient is fixed — moving a suborder to a different patient is a different
  * operation than correcting the order it belongs to.
  */
-function SubOrderFields({ subOrder }: { subOrder: AdminOrderSubOrder }) {
+function SubOrderFields({
+  subOrder,
+  orderId,
+  onDeleted,
+}: {
+  subOrder: AdminOrderSubOrder;
+  orderId: string;
+  onDeleted: (subOrderId: string) => void;
+}) {
   const patient = subOrder.patient;
   const name = patient
     ? [patient.last_name, patient.first_name].filter(Boolean).join(", ")
@@ -148,6 +238,12 @@ function SubOrderFields({ subOrder }: { subOrder: AdminOrderSubOrder }) {
             ))}
           </SelectContent>
         </Select>
+
+        <DeleteSubOrderButton
+          subOrderId={subOrder.id}
+          orderId={orderId}
+          onDeleted={onDeleted}
+        />
       </div>
     </li>
   );
@@ -168,11 +264,43 @@ export function AdminOrderDrawer({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const formRef = React.useRef<HTMLFormElement>(null);
+  /**
+   * Set by the first edit made anywhere in the form, and cleared whenever the
+   * drawer takes on another order. Interaction rather than a diff of the
+   * values: the fields are uncontrolled, and the ones that aren't plain inputs
+   * — the eye checkboxes, the invoice and status selects — are Radix controls
+   * whose real input is a hidden one it keeps in step, which is easy to read
+   * at the wrong moment and miss. Both events below bubble out of those, so
+   * nothing in the form can be changed without this noticing. The cost is that
+   * changing a value back by hand still counts as an edit.
+   */
+  const dirtyRef = React.useRef(false);
+  /** The "you have unsaved changes" modal, raised by an attempt to close. */
+  const [promptingUnsaved, setPromptingUnsaved] = React.useState(false);
+
+  // The close hangs off the submission rather than off an effect watching
+  // state: a failed save has to keep the drawer open with its error, which
+  // matters most when the save was asked for on the way out.
   const [state, formAction, isPending] = useActionState(
-    updateOrderAsAdmin,
+    async (previous: UpdateOrderState, formData: FormData) => {
+      const result = await updateOrderAsAdmin(previous, formData);
+      // Either way the prompt has had its answer: on success the drawer goes,
+      // on failure the error belongs in the drawer behind it.
+      setPromptingUnsaved(false);
+      if (result && "success" in result) {
+        onOpenChange(false);
+        router.refresh();
+      }
+      return result;
+    },
     null
   );
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  // The list's rows come from a snapshot the table handed over, so a deleted
+  // suborder has to be dropped here as well: `router.refresh()` re-fetches the
+  // table behind the drawer, but not the object this drawer was opened with.
+  const [deletedSubOrders, setDeletedSubOrders] = React.useState<string[]>([]);
 
   // The toast, the close and the refresh hang off the submission rather than
   // off an effect watching state: once the row is gone the drawer has nothing
@@ -202,12 +330,70 @@ export function AdminOrderDrawer({
   // error from a previous attempt shouldn't either.
   React.useEffect(() => {
     setConfirmingDelete(false);
-  }, [order?.id]);
+    setPromptingUnsaved(false);
+    setDeletedSubOrders([]);
+    dirtyRef.current = false;
+  }, [order?.id, open]);
 
-  // Close the drawer once a save succeeds.
-  React.useEffect(() => {
-    if (state && "success" in state) onOpenChange(false);
-  }, [state, onOpenChange]);
+  const subOrders = (order?.suborders ?? []).filter(
+    (subOrder) => !deletedSubOrders.includes(subOrder.id)
+  );
+
+  // Dropping the row also drops its hidden id, so the next save leaves the
+  // deleted suborder alone instead of trying to update a row that is gone.
+  const handleSubOrderDeleted = React.useCallback(
+    (subOrderId: string) => {
+      setDeletedSubOrders((previous) => [...previous, subOrderId]);
+      router.refresh();
+    },
+    [router]
+  );
+
+  const markDirty = React.useCallback(() => {
+    dirtyRef.current = true;
+  }, []);
+
+  /**
+   * The prompt's Save. A field the form won't accept can't be pointed at from
+   * under a modal, so the prompt steps aside first and lets the browser say
+   * what is wrong; otherwise this is the same submit the Save button makes,
+   * and the action closes both once it lands.
+   */
+  const saveAndClose = React.useCallback(() => {
+    const form = formRef.current;
+    if (!form) return;
+    if (!form.checkValidity()) {
+      setPromptingUnsaved(false);
+      requestAnimationFrame(() => form.reportValidity());
+      return;
+    }
+    form.requestSubmit();
+  }, []);
+
+  /**
+   * The ways out that aren't a decision — Escape, the overlay, the drag
+   * handle, the close button. Edits in the form stop the close and raise the
+   * prompt instead; an untouched drawer just closes. Cancel doesn't come
+   * through here: it is the user saying to drop the edits.
+   */
+  const handleDrawerOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (next) {
+        onOpenChange(true);
+        return;
+      }
+      // A save already in flight closes the drawer when it returns.
+      if (isPending) return;
+
+      if (order && formRef.current && dirtyRef.current) {
+        setPromptingUnsaved(true);
+        return;
+      }
+
+      onOpenChange(false);
+    },
+    [isPending, onOpenChange, order]
+  );
 
   const creator = order?.created_by_user;
   const creatorLabel = creator
@@ -216,7 +402,7 @@ export function AdminOrderDrawer({
     : null;
 
   const drawer = (
-    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
+    <Drawer direction="right" open={open} onOpenChange={handleDrawerOpenChange}>
       <DrawerContent className="!w-[46vw] !max-w-[46vw]">
         <DrawerHeader className="border-b">
           <DrawerTitle>Order details</DrawerTitle>
@@ -230,7 +416,10 @@ export function AdminOrderDrawer({
           // opened without the drawer closing in between.
           <form
             key={order.id}
+            ref={formRef}
             action={formAction}
+            onInput={markDirty}
+            onChange={markDirty}
             className="flex min-h-0 flex-1 flex-col"
           >
             <input type="hidden" name="id" value={order.id} />
@@ -328,17 +517,22 @@ export function AdminOrderDrawer({
                 <h3 className="text-sm font-medium">
                   Suborders{" "}
                   <span className="text-muted-foreground tabular-nums">
-                    ({order.suborders.length})
+                    ({subOrders.length})
                   </span>
                 </h3>
-                {order.suborders.length === 0 ? (
+                {subOrders.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
                     This order has no suborders.
                   </p>
                 ) : (
                   <ul className="divide-y rounded-lg border">
-                    {order.suborders.map((subOrder) => (
-                      <SubOrderFields key={subOrder.id} subOrder={subOrder} />
+                    {subOrders.map((subOrder) => (
+                      <SubOrderFields
+                        key={subOrder.id}
+                        subOrder={subOrder}
+                        orderId={order.id}
+                        onDeleted={handleSubOrderDeleted}
+                      />
                     ))}
                   </ul>
                 )}
@@ -390,9 +584,12 @@ export function AdminOrderDrawer({
                 <Trash2 className="size-4" />
                 Delete order
               </Button>
+              {/* An explicit discard, so it goes round the unsaved-changes
+                  prompt: the user already said what to do with the edits. */}
               <Button
                 type="button"
                 variant="ghost"
+                disabled={isPending}
                 onClick={() => onOpenChange(false)}
               >
                 Cancel
@@ -420,6 +617,62 @@ export function AdminOrderDrawer({
 
       {order && (
         <Dialog
+          open={promptingUnsaved}
+          onOpenChange={(next) => {
+            // Dismissing the prompt means "keep editing", never "discard".
+            if (!isPending) setPromptingUnsaved(next);
+          }}
+        >
+          <DialogContent showCloseButton={false}>
+            <DialogHeader>
+              <DialogTitle>Save your changes?</DialogTitle>
+              <DialogDescription>
+                This order has edits that haven&apos;t been saved yet. Closing
+                the drawer without saving loses them.
+              </DialogDescription>
+            </DialogHeader>
+
+            {state && "error" in state ? (
+              <p className="text-destructive text-sm">{state.error}</p>
+            ) : null}
+
+            <DialogFooter className="mt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isPending}
+                onClick={() => setPromptingUnsaved(false)}
+              >
+                Keep editing
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => {
+                  setPromptingUnsaved(false);
+                  onOpenChange(false);
+                }}
+              >
+                Discard changes
+              </Button>
+              <Button type="button" disabled={isPending} onClick={saveAndClose}>
+                {isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save changes"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {order && (
+        <Dialog
           open={confirmingDelete}
           onOpenChange={(next) => {
             // Nothing to go back to mid-delete; let the action finish.
@@ -435,11 +688,11 @@ export function AdminOrderDrawer({
                   ? ` · ${order.doctor_office.name}`
                   : ""}
                 .{" "}
-                {order.suborders.length === 0
+                {subOrders.length === 0
                   ? "The order is deleted for good."
-                  : order.suborders.length === 1
+                  : subOrders.length === 1
                     ? "The order and its one suborder are deleted for good."
-                    : `The order and all ${order.suborders.length} of its suborders are deleted for good.`}{" "}
+                    : `The order and all ${subOrders.length} of its suborders are deleted for good.`}{" "}
                 This cannot be undone.
               </DialogDescription>
             </DialogHeader>
