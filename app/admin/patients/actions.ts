@@ -174,3 +174,98 @@ export async function updatePatientAsAdmin(
   revalidatePath("/admin/patients");
   return { success: true };
 }
+
+export type DeletePatientState =
+  | { error: string }
+  | { success: true; subOrders: number; draftSubOrders: number }
+  | null;
+
+/**
+ * Delete a patient and every suborder that names them.
+ *
+ * Both FKs into `patients` are `on delete restrict` like every other one here,
+ * so the cascade is done in this action rather than by the database: the
+ * suborders and draft suborders go first, and only then the patient. An
+ * accidental delete from anywhere else stays blocked by the constraint, and if
+ * the children can't be removed the restrict refuses the last statement — the
+ * patient survives instead of their suborders being orphaned. There is no
+ * transaction (PostgREST has none), so this is the order that cannot leave
+ * dangling rows behind.
+ *
+ * The orders those suborders belonged to are left alone: an order can name
+ * several patients, and one of them leaving is not a reason to delete it. An
+ * order whose only suborder was this patient's is left with none, and is
+ * deleted from the admin orders drawer if it is no longer wanted.
+ *
+ * Directus is not touched. `directus/mirror.ts` only ever writes, so the
+ * mirrored patient stays in the legacy backend until it is removed there.
+ */
+export async function deletePatientAsAdmin(
+  _prev: DeletePatientState,
+  formData: FormData
+): Promise<DeletePatientState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { error: "You need an admin account to delete patients." };
+  }
+
+  const id = field(formData, "id");
+  if (!id) {
+    return { error: "Missing patient id." };
+  }
+
+  const { data: deletedSubOrders, error: subOrderError } = await supabase
+    .from("suborders")
+    .delete()
+    .eq("patient_id", id)
+    .select("id");
+
+  if (subOrderError) {
+    return { error: subOrderError.message };
+  }
+
+  // Parked drafts reference the patient too, and that FK would refuse the
+  // delete below just as loudly as a real suborder's.
+  const { data: deletedDraftSubOrders, error: draftError } = await supabase
+    .from("draft_suborders")
+    .delete()
+    .eq("patient_id", id)
+    .select("id");
+
+  if (draftError) {
+    return { error: draftError.message };
+  }
+
+  const { data: deletedPatients, error } = await supabase
+    .from("patients")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // RLS turns "not allowed" into "no rows matched", and the deletes above
+  // report nothing in that case either — so an empty result here is the only
+  // sign that the patient was never deleted.
+  if (!deletedPatients || deletedPatients.length === 0) {
+    return { error: "That patient no longer exists, or you can't delete it." };
+  }
+
+  revalidatePath("/admin/patients");
+  return {
+    success: true,
+    subOrders: deletedSubOrders?.length ?? 0,
+    draftSubOrders: deletedDraftSubOrders?.length ?? 0,
+  };
+}
