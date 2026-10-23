@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { useActionState } from "react";
-import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { formatDate } from "@/lib/date";
 import {
@@ -24,6 +26,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Drawer,
   DrawerContent,
   DrawerDescription,
@@ -32,7 +42,11 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 
-import { updateOrderAsAdmin } from "../actions";
+import {
+  deleteOrderAsAdmin,
+  updateOrderAsAdmin,
+  type DeleteOrderState,
+} from "../actions";
 import type { AdminOrderRow, AdminOrderSubOrder } from "./AdminOrdersData";
 import { INVOICE_TYPES, NO_INVOICE_TYPE } from "./invoiceType";
 
@@ -153,12 +167,42 @@ export function AdminOrderDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     updateOrderAsAdmin,
     null
   );
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+
+  // The toast, the close and the refresh hang off the submission rather than
+  // off an effect watching state: once the row is gone the drawer has nothing
+  // left to show, so the list has to be re-fetched in the same breath.
+  const [deleteState, deleteAction, isDeleting] = useActionState(
+    async (previous: DeleteOrderState, formData: FormData) => {
+      const result = await deleteOrderAsAdmin(previous, formData);
+      if (result && "success" in result) {
+        toast.success("Order deleted", {
+          description:
+            result.subOrders === 1
+              ? "Its suborder was deleted with it."
+              : `${result.subOrders} suborders were deleted with it.`,
+        });
+        setConfirmingDelete(false);
+        onOpenChange(false);
+        router.refresh();
+      }
+      return result;
+    },
+    null
+  );
 
   const { data: medicines, isLoading: medicinesLoading } = useListMedicines();
+
+  // A confirm left open for one order must not greet the next one, and an
+  // error from a previous attempt shouldn't either.
+  React.useEffect(() => {
+    setConfirmingDelete(false);
+  }, [order?.id]);
 
   // Close the drawer once a save succeeds.
   React.useEffect(() => {
@@ -171,7 +215,7 @@ export function AdminOrderDrawer({
       creator.email
     : null;
 
-  return (
+  const drawer = (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="!w-[46vw] !max-w-[46vw]">
         <DrawerHeader className="border-b">
@@ -340,6 +384,15 @@ export function AdminOrderDrawer({
               <Button
                 type="button"
                 variant="ghost"
+                className="text-destructive hover:text-destructive mr-auto"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2 className="size-4" />
+                Delete order
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => onOpenChange(false)}
               >
                 Cancel
@@ -359,5 +412,78 @@ export function AdminOrderDrawer({
         )}
       </DrawerContent>
     </Drawer>
+  );
+
+  return (
+    <>
+      {drawer}
+
+      {order && (
+        <Dialog
+          open={confirmingDelete}
+          onOpenChange={(next) => {
+            // Nothing to go back to mid-delete; let the action finish.
+            if (!isDeleting) setConfirmingDelete(next);
+          }}
+        >
+          <DialogContent showCloseButton={false}>
+            <DialogHeader>
+              <DialogTitle>Delete this order?</DialogTitle>
+              <DialogDescription>
+                {order.medicine?.name ?? "This order"} ×{order.quantity}
+                {order.doctor_office?.name
+                  ? ` · ${order.doctor_office.name}`
+                  : ""}
+                .{" "}
+                {order.suborders.length === 0
+                  ? "The order is deleted for good."
+                  : order.suborders.length === 1
+                    ? "The order and its one suborder are deleted for good."
+                    : `The order and all ${order.suborders.length} of its suborders are deleted for good.`}{" "}
+                This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Its own form: the drawer's form saves edits, and a delete
+                submitted from inside it would run that action instead. */}
+            <form action={deleteAction}>
+              <input type="hidden" name="id" value={order.id} />
+
+              {deleteState && "error" in deleteState ? (
+                <p className="text-destructive text-sm">{deleteState.error}</p>
+              ) : null}
+
+              <DialogFooter className="mt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={isDeleting}
+                >
+                  Keep order
+                </Button>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Deleting…
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="size-4" />
+                      Delete order
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
