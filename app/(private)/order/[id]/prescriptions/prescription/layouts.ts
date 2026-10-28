@@ -16,7 +16,7 @@ import { GkvTemplate, PrescriptionTemplate } from './PrescriptionTemplate'
 export const PRESCRIPTION_LAYOUTS = {
   /** The Muster 16 pad, printed as "IVOM PRIVATREZEPT". */
   ivom: { Template: PrescriptionTemplate, Fields: PrescriptionFields },
-  /** The GKV pad: the same form, with nothing naming it IVOM. */
+  /** The GKV pad: the same form on rose-tinted stock, with nothing naming it. */
   gkv: { Template: GkvTemplate, Fields: PrescriptionFields },
   /** The Privat pad: the practice's own letterhead. */
   privat: { Template: LetterheadTemplate, Fields: LetterheadFields },
