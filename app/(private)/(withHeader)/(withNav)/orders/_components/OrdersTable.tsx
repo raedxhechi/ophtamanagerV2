@@ -127,6 +127,7 @@ export function OrdersTable({
   pageSize,
   search,
   canEditStatus,
+  isAdmin,
 }: {
   data: OrderRow[];
   /** 1-based index of the currently loaded page. */
@@ -144,6 +145,12 @@ export function OrdersTable({
    * admin or a manager, who are the only roles RLS lets update an order.
    */
   canEditStatus: boolean;
+  /**
+   * Whether the suborder rows offer the XML export. Admins only, and decided
+   * on the server for the same reason `canEditStatus` is — the private area has
+   * no user store to read the role from on the client.
+   */
+  isAdmin: boolean;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -302,6 +309,7 @@ export function OrdersTable({
                     <TableCell colSpan={columns.length} className='p-4 pl-[60px] bg-background'>
                       <div className='flex h-full'>
                         <SubordersTable
+                          isAdmin={isAdmin}
                           subOrders={row.original.suborders.map((suborder) => ({
                             ...suborder,
                             order: row.original,

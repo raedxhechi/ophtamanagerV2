@@ -21,11 +21,14 @@ import { useColumns } from './useColumns'
 export const SubordersTable = ({
   subOrders,
   hideActions,
+  isAdmin,
 }: {
   subOrders: SubOrder[]
   hideActions?: boolean
+  /** Whether to offer the XML export action. See useColumns. */
+  isAdmin?: boolean
 }) => {
-  const columns = useColumns(hideActions)
+  const columns = useColumns(hideActions, isAdmin)
   const table = useReactTable({
     data: subOrders,
     columns,

@@ -6,7 +6,7 @@ import { ColumnDef } from '@tanstack/react-table'
 
 // import { OrderSubOrderTableItem } from './schema'
 // import { DataTableColumnHeader } from './table/data-table-column-header'
-import { Eye, FileText, Printer } from 'lucide-react'
+import { Eye, FileCode2, FileText, Printer } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { SubOrder } from '@/types'
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDateFromString } from '@/lib/utils'
 
-export const useColumns = (hideActions?: boolean) => {
+export const useColumns = (hideActions?: boolean, isAdmin?: boolean) => {
   const columns: ColumnDef<SubOrder>[] = [
     {
       accessorKey: 'Name',
@@ -114,6 +114,21 @@ export const useColumns = (hideActions?: boolean) => {
               <FileText />
             </Button>
           </Link>
+          {/* The suborder's XML export — a proof of concept, and admins only.
+              A plain download link: the route answers with the file, so there
+              is no blob to build or revoke on the client. The route checks the
+              role again, which is what actually enforces it. */}
+          {isAdmin && (
+            <a
+              href={`/suborder/${row.original.id}/xml`}
+              download
+              title='XML-Export'
+            >
+              <Button variant='outline'>
+                <FileCode2 />
+              </Button>
+            </a>
+          )}
         </div>
       ),
     }
