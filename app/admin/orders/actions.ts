@@ -142,3 +142,127 @@ export async function updateOrderAsAdmin(
   revalidatePath("/admin/orders");
   return { success: true };
 }
+
+export type DeleteOrderState =
+  | { error: string }
+  | { success: true; subOrders: number }
+  | null;
+
+/**
+ * Delete an order and every suborder hanging off it.
+ *
+ * The FK is `on delete restrict` like every other one here, so the cascade is
+ * done in this action rather than by the database: the suborders go first, and
+ * only then the order. That keeps an accidental delete from anywhere else
+ * still blocked by the constraint, and it means the order survives if the
+ * suborders can't be removed — the restrict refuses the second statement,
+ * which is the safe way round. There is no transaction (PostgREST has none),
+ * so the reverse order would be the one that could orphan rows.
+ */
+export async function deleteOrderAsAdmin(
+  _prev: DeleteOrderState,
+  formData: FormData
+): Promise<DeleteOrderState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { error: "You need an admin account to delete orders." };
+  }
+
+  const id = field(formData, "id");
+  if (!id) {
+    return { error: "Missing order id." };
+  }
+
+  const { data: deletedSubOrders, error: subOrderError } = await supabase
+    .from("suborders")
+    .delete()
+    .eq("order_id", id)
+    .select("id");
+
+  if (subOrderError) {
+    return { error: subOrderError.message };
+  }
+
+  const { data: deletedOrders, error } = await supabase
+    .from("orders")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // RLS turns "not allowed" into "no rows matched", and the suborder delete
+  // above reports nothing in that case either — so an empty result here is
+  // the only sign that the order was never deleted.
+  if (!deletedOrders || deletedOrders.length === 0) {
+    return { error: "That order no longer exists, or you can't delete it." };
+  }
+
+  revalidatePath("/admin/orders");
+  return { success: true, subOrders: deletedSubOrders?.length ?? 0 };
+}
+
+export type DeleteSubOrderResult = { error: string } | { success: true };
+
+/**
+ * Delete a single suborder out of an order.
+ *
+ * Called straight from the drawer rather than through a form: the suborder
+ * rows live inside the order's edit form, and a second form nested in that one
+ * is invalid HTML. The order id is passed alongside so the delete can be
+ * pinned to it — the same belt and braces the suborder update uses, which
+ * stops an id smuggled in from elsewhere being deleted through this action.
+ */
+export async function deleteSubOrderAsAdmin(
+  subOrderId: string,
+  orderId: string
+): Promise<DeleteSubOrderResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { error: "You need an admin account to delete suborders." };
+  }
+
+  if (!subOrderId || !orderId) {
+    return { error: "Missing suborder id." };
+  }
+
+  const { data: deleted, error } = await supabase
+    .from("suborders")
+    .delete()
+    .eq("id", subOrderId)
+    .eq("order_id", orderId)
+    .select("id");
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // RLS reports a refusal as nothing matched, same as a row that is already
+  // gone — either way the caller shouldn't be told it worked.
+  if (!deleted || deleted.length === 0) {
+    return { error: "That suborder no longer exists, or you can't delete it." };
+  }
+
+  revalidatePath("/admin/orders");
+  return { success: true };
+}

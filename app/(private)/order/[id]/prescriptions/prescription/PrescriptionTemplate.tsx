@@ -8,10 +8,10 @@ import { PAGE_HEIGHT, PAGE_WIDTH } from './shared'
 // PrescriptionFields — this layer only ever draws the paper, so leaving it out
 // gives a data-only PDF for printing onto blanks that already carry it.
 //
-// Two blanks share this drawing and differ only in what names the form: the
-// IVOM pad, watermarked "IVOM" and titled "IVOM PRIVATREZEPT", and the GKV
-// pad, which leaves both blank — hence the `ivom` switch and the two
-// components exported at the bottom.
+// Two blanks share this drawing and differ in two things: the IVOM pad is
+// printed on white, watermarked "IVOM" and titled "IVOM PRIVATREZEPT", while
+// the GKV pad is printed on rose-tinted stock and names nothing — hence the
+// `ivom` switch and the two components exported at the bottom.
 //
 // All coordinates are PDF points from the page's top-left corner, measured off
 // the scan. PrescriptionFields is measured off the same scan, which is what
@@ -19,6 +19,13 @@ import { PAGE_HEIGHT, PAGE_WIDTH } from './shared'
 
 const RED = '#D4406A'
 const WATERMARK = '#F6E0EA'
+const WHITE = '#FFFFFF'
+/**
+ * The GKV blank's stock. The real sheet carries a rose security screen — a
+ * woven pattern of dots far finer than the form's own rules — which at any
+ * size this is ever looked at reads as a flat wash, so it is drawn flat.
+ */
+const TINT = '#FAE3EF'
 const THIN = 0.6
 const THICK = 1.8
 
@@ -31,6 +38,9 @@ const styles = StyleSheet.create({
     height: PAGE_HEIGHT,
   },
 })
+
+/** A rectangle on the sheet — a ruled box, or a patch of the tint. */
+type Area = { x: number; y: number; w: number; h: number }
 
 type LabelProps = {
   x: number
@@ -71,8 +81,13 @@ const Label = ({ x, y, children, size = 5.5, bold, width, align = 'left', color 
   </Text>
 )
 
-const Box = ({ x, y, w, h, stroke = THIN }: { x: number; y: number; w: number; h: number; stroke?: number }) => (
+const Box = ({ x, y, w, h, stroke = THIN }: Area & { stroke?: number }) => (
   <Rect x={x} y={y} width={w} height={h} stroke={RED} strokeWidth={stroke} fill='none' />
+)
+
+/** A flat patch of colour, drawn under the rules. */
+const Fill = ({ x, y, w, h, color }: Area & { color: string }) => (
+  <Rect x={x} y={y} width={w} height={h} fill={color} />
 )
 
 const HLine = ({ x1, x2, y, stroke = THIN }: { x1: number; x2: number; y: number; stroke?: number }) => (
@@ -93,6 +108,9 @@ const VLine = ({
   dash?: string
 }) => <Line x1={x} y1={y1} x2={x} y2={y2} stroke={RED} strokeWidth={stroke} strokeDasharray={dash} />
 
+// The patient block: name, insurer, and the numbers underneath.
+const PATIENT_BLOCK: Area = { x: 25, y: 13.3, w: 225.7, h: 132.4 }
+
 // Left margin: the tick boxes beside the patient block and the Rp. area.
 const SIDE_BOXES = [
   { y: 23.3, label: 'Gebühr\nfrei' },
@@ -106,8 +124,10 @@ const SIDE_BOXES = [
   { y: 214.3, label: 'aut\nidem' },
 ]
 const SIDE_BOX = { x: 7.3, w: 15, h: 14.3 }
+const SIDE_BOX_AREAS: Area[] = SIDE_BOXES.map(({ y }) => ({ x: SIDE_BOX.x, y, w: SIDE_BOX.w, h: SIDE_BOX.h }))
 
-// Top right: the numbered code boxes and their headings.
+// Top right: the numbered code boxes and their headings, then the two boxes
+// that sit beside them.
 const CODE_BOXES = [
   { digit: '', label: 'BVG' },
   { digit: '', label: 'Hilfs-\nmittel' },
@@ -115,10 +135,19 @@ const CODE_BOXES = [
   { digit: '', label: 'Spr.-St.\nBedarf' },
 ]
 const CODE_BOX = { x: 256.7, y: 25, w: 13.3, h: 16 }
+const CODE_BOX_AREAS: Area[] = CODE_BOXES.map((_, i) => ({
+  x: CODE_BOX.x + i * CODE_BOX.w,
+  y: CODE_BOX.y,
+  w: CODE_BOX.w,
+  h: CODE_BOX.h,
+}))
+const BEGR_BOX: Area = { x: 319.3, y: 25, w: 13, h: 16 }
+const APOTHEKE_BOX: Area = { x: 339.3, y: 25, w: 67.7, h: 16 }
 
 // Zuzahlung / Gesamt-Brutto: one thick box, split at DIVIDER, with dashed digit
 // cells and a solid tick where the decimal point goes.
 const AMOUNT = { x: 256.7, y: 50, w: 150.3, h: 21, divider: 311 }
+const AMOUNT_BOX: Area = { x: AMOUNT.x, y: AMOUNT.y, w: AMOUNT.w, h: AMOUNT.h }
 const AMOUNT_DASHES = [270.3, 297.7, 324.7, 338.3, 352, 365.7, 393]
 const AMOUNT_DECIMALS = [284, 379.3]
 
@@ -130,6 +159,41 @@ const ROWS = [
   { y: 122.7, h: 23, label: '3. Verordnung' },
 ]
 const ROW = { x: 256.7, w: 150.3, faktor: 347.3, taxe: 364.3, tickStep: 10 }
+const ROW_AREAS: Area[] = ROWS.map(({ y, h }) => ({ x: ROW.x, y, w: ROW.w, h }))
+
+// Bottom: the six date cells the pharmacy stamps, and the box that carries the
+// form's name on the IVOM pad.
+const ABGABE_BOXES: Area[] = Array.from({ length: 6 }, (_, i) => ({ x: 85 + i * 12.3, y: 231, w: 12.3, h: 16.3 }))
+const NAME_BOX: Area = { x: 7.3, y: 256.7, w: 192.7, h: 28.3 }
+
+/**
+ * Where the tint goes on the GKV blank: the ruled form, bled a few points past
+ * its edges, following its stepped bottom — the right half stops at the rule
+ * under the Verordnung rows, the left half carries on to the foot of the form.
+ * The paper outside this stays white, as it does on the real sheet.
+ */
+const TINT_AREA: Area[] = [
+  { x: 4.5, y: 7.5, w: 408, h: 241.5 },
+  { x: 4.5, y: 249, w: 199.5, h: 42.5 },
+]
+
+/**
+ * What the tint stops at: every box on the form is knocked back to white, so
+ * the tint only ever shows in the margins and between the boxes. Built from the
+ * same constants that draw the boxes, so a box that moves takes its hole with
+ * it.
+ */
+const TINT_KNOCKOUTS: Area[] = [
+  PATIENT_BLOCK,
+  ...SIDE_BOX_AREAS,
+  ...CODE_BOX_AREAS,
+  BEGR_BOX,
+  APOTHEKE_BOX,
+  AMOUNT_BOX,
+  ...ROW_AREAS,
+  ...ABGABE_BOXES,
+  NAME_BOX,
+]
 
 function Muster16Template({ ivom }: { ivom: boolean }) {
   return (
@@ -142,8 +206,21 @@ function Muster16Template({ ivom }: { ivom: boolean }) {
       )}
 
       <Svg style={styles.layer} width={PAGE_WIDTH} height={PAGE_HEIGHT} viewBox={`0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}`}>
+        {/* The GKV pad's stock, and the boxes knocked out of it — before any
+            rule, so the whole form draws over the top of them. */}
+        {!ivom && (
+          <>
+            {TINT_AREA.map((area, i) => (
+              <Fill key={`tint-${i}`} {...area} color={TINT} />
+            ))}
+            {TINT_KNOCKOUTS.map((area, i) => (
+              <Fill key={`knockout-${i}`} {...area} color={WHITE} />
+            ))}
+          </>
+        )}
+
         {/* Patient block */}
-        <Box x={25} y={13.3} w={225.7} h={132.4} />
+        <Box {...PATIENT_BLOCK} />
         <HLine x1={25} x2={250.7} y={42.3} />
         <HLine x1={25} x2={250.7} y={98.3} />
         <HLine x1={25} x2={250.7} y={122.3} />
@@ -152,19 +229,19 @@ function Muster16Template({ ivom }: { ivom: boolean }) {
         <VLine x={105.7} y1={122.3} y2={128} />
         <VLine x={182.7} y1={139.5} y2={145.7} />
 
-        {SIDE_BOXES.map(({ y }) => (
-          <Box key={y} x={SIDE_BOX.x} y={y} w={SIDE_BOX.w} h={SIDE_BOX.h} />
+        {SIDE_BOX_AREAS.map((area) => (
+          <Box key={area.y} {...area} />
         ))}
 
         {/* Code boxes, Begr.-Pflicht, Apotheken-Nummer */}
-        {CODE_BOXES.map((_, i) => (
-          <Box key={i} x={CODE_BOX.x + i * CODE_BOX.w} y={CODE_BOX.y} w={CODE_BOX.w} h={CODE_BOX.h} />
+        {CODE_BOX_AREAS.map((area) => (
+          <Box key={area.x} {...area} />
         ))}
-        <Box x={319.3} y={25} w={13} h={16} />
-        <Box x={339.3} y={25} w={67.7} h={16} />
+        <Box {...BEGR_BOX} />
+        <Box {...APOTHEKE_BOX} />
 
         {/* Zuzahlung / Gesamt-Brutto */}
-        <Box x={AMOUNT.x} y={AMOUNT.y} w={AMOUNT.w} h={AMOUNT.h} stroke={THICK} />
+        <Box {...AMOUNT_BOX} stroke={THICK} />
         <VLine x={AMOUNT.divider} y1={AMOUNT.y} y2={AMOUNT.y + AMOUNT.h} stroke={THICK} />
         {AMOUNT_DASHES.map((x) => (
           <VLine key={x} x={x} y1={AMOUNT.y + 2} y2={AMOUNT.y + AMOUNT.h - 2} dash='2,1.5' />
@@ -177,27 +254,27 @@ function Muster16Template({ ivom }: { ivom: boolean }) {
         ))}
 
         {/* Verordnung rows */}
-        {ROWS.map(({ y, h }) => (
-          <React.Fragment key={y}>
-            <Box x={ROW.x} y={y} w={ROW.w} h={h} />
-            <VLine x={ROW.faktor} y1={y} y2={y + h} />
-            <VLine x={ROW.taxe} y1={y} y2={y + h} />
+        {ROW_AREAS.map((area) => (
+          <React.Fragment key={area.y}>
+            <Box {...area} />
+            <VLine x={ROW.faktor} y1={area.y} y2={area.y + area.h} />
+            <VLine x={ROW.taxe} y1={area.y} y2={area.y + area.h} />
             {Array.from({ length: 8 }, (_, k) => (
-              <VLine key={k} x={ROW.x + (k + 1) * ROW.tickStep} y1={y} y2={y + 3} />
+              <VLine key={k} x={ROW.x + (k + 1) * ROW.tickStep} y1={area.y} y2={area.y + 3} />
             ))}
           </React.Fragment>
         ))}
 
         {/* Abgabedatum boxes */}
-        {Array.from({ length: 6 }, (_, i) => (
-          <Box key={i} x={85 + i * 12.3} y={231} w={12.3} h={16.3} />
+        {ABGABE_BOXES.map((area) => (
+          <Box key={area.x} {...area} />
         ))}
 
         {/* Bottom edge: the stepped rule and the form-name box */}
         <HLine x1={202.7} x2={407} y={249} stroke={THICK} />
         <VLine x={202.7} y1={249} y2={288} stroke={THICK} />
         <HLine x1={7.3} x2={202.7} y={288} stroke={THICK} />
-        <Box x={7.3} y={256.7} w={192.7} h={28.3} />
+        <Box {...NAME_BOX} />
       </Svg>
 
       {/* Headings and field labels */}
@@ -292,8 +369,8 @@ function Muster16Template({ ivom }: { ivom: boolean }) {
   )
 }
 
-/** The IVOM pad: the form under its "IVOM PRIVATREZEPT" name. */
+/** The IVOM pad: the form on white, under its "IVOM PRIVATREZEPT" name. */
 export const PrescriptionTemplate = () => <Muster16Template ivom />
 
-/** The GKV pad: the same form with nothing naming it IVOM. */
+/** The GKV pad: the same form on rose-tinted stock, with nothing naming it. */
 export const GkvTemplate = () => <Muster16Template ivom={false} />
