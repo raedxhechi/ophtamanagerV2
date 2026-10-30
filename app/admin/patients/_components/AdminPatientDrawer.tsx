@@ -2,21 +2,11 @@
 
 import * as React from "react";
 import { useActionState } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Eye, Loader2 } from "lucide-react";
 
 import { formatDate } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
@@ -26,8 +16,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 
-import { deletePatientAsAdmin, updatePatientAsAdmin } from "../actions";
-import type { DeletePatientState } from "../actions";
+import { updatePatientAsAdmin } from "../actions";
 import type { AdminPatientRow, AdminPatientSubOrder } from "./AdminPatientsData";
 import { PatientFields } from "./PatientFields";
 
@@ -64,31 +53,6 @@ function ReadOnlyRow({
       </dd>
     </div>
   );
-}
-
-/**
- * What goes with the patient, in one sentence. The confirm counts the rows the
- * drawer was opened with; the toast reports what the action actually deleted,
- * and they are worded the same so the second reads as the answer to the first.
- */
-function describeDeleted(subOrders: number, draftSubOrders: number): string {
-  const parts: string[] = [];
-  if (subOrders > 0) {
-    parts.push(subOrders === 1 ? "one suborder" : `${subOrders} suborders`);
-  }
-  if (draftSubOrders > 0) {
-    parts.push(
-      draftSubOrders === 1
-        ? "one draft suborder"
-        : `${draftSubOrders} draft suborders`
-    );
-  }
-  if (parts.length === 0) {
-    return "They have no suborders, so nothing else goes with them.";
-  }
-  return `Their ${parts.join(" and ")} ${
-    subOrders + draftSubOrders === 1 ? "goes" : "go"
-  } with them.`;
 }
 
 /** The eye badges, in the same colours the office-facing suborder tables use. */
@@ -137,35 +101,7 @@ export function AdminPatientDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const router = useRouter();
-  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
-
-  // The toast, the close and the refresh hang off the submission rather than
-  // off an effect watching state: once the row is gone the drawer has nothing
-  // left to show, so the list has to be re-fetched in the same breath.
-  const [deleteState, deleteAction, isDeleting] = useActionState(
-    async (previous: DeletePatientState, formData: FormData) => {
-      const result = await deletePatientAsAdmin(previous, formData);
-      if (result && "success" in result) {
-        toast.success("Patient deleted", {
-          description: describeDeleted(result.subOrders, result.draftSubOrders),
-        });
-        setConfirmingDelete(false);
-        onOpenChange(false);
-        router.refresh();
-      }
-      return result;
-    },
-    null
-  );
-
-  // A confirm left open for one patient must not greet the next one, and an
-  // error from a previous attempt shouldn't either.
-  React.useEffect(() => {
-    setConfirmingDelete(false);
-  }, [patient?.id, open]);
-
-  const drawer = (
+  return (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="!w-[46vw] !max-w-[46vw]">
         <DrawerHeader className="border-b">
@@ -189,96 +125,19 @@ export function AdminPatientDrawer({
             key={patient.id}
             patient={patient}
             onClose={() => onOpenChange(false)}
-            onRequestDelete={() => setConfirmingDelete(true)}
           />
         )}
       </DrawerContent>
     </Drawer>
-  );
-
-  return (
-    <>
-      {drawer}
-
-      {patient && (
-        <Dialog
-          open={confirmingDelete}
-          onOpenChange={(next) => {
-            // Nothing to go back to mid-delete; let the action finish.
-            if (!isDeleting) setConfirmingDelete(next);
-          }}
-        >
-          <DialogContent showCloseButton={false}>
-            <DialogHeader>
-              <DialogTitle>Delete this patient?</DialogTitle>
-              <DialogDescription>
-                {[patient.first_name, patient.last_name]
-                  .filter(Boolean)
-                  .join(" ") || "This patient"}
-                {patient.date_of_birth
-                  ? ` · ${formatDate(patient.date_of_birth)}`
-                  : ""}
-                .{" "}
-                {describeDeleted(
-                  patient.suborders.length,
-                  patient.draft_suborders?.length ?? 0
-                )}{" "}
-                This cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-
-            {/* Its own form: the drawer's form saves edits, and a delete
-                submitted from inside it would run that action instead. */}
-            <form action={deleteAction}>
-              <input type="hidden" name="id" value={patient.id} />
-
-              {deleteState && "error" in deleteState ? (
-                <p className="text-destructive text-sm">{deleteState.error}</p>
-              ) : null}
-
-              <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setConfirmingDelete(false)}
-                  disabled={isDeleting}
-                >
-                  Keep patient
-                </Button>
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Deleting…
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="size-4" />
-                      Delete patient
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
   );
 }
 
 function AdminPatientEditForm({
   patient,
   onClose,
-  onRequestDelete,
 }: {
   patient: AdminPatientRow;
   onClose: () => void;
-  onRequestDelete: () => void;
 }) {
   const [state, formAction, isPending] = useActionState(
     updatePatientAsAdmin,
@@ -381,15 +240,6 @@ function AdminPatientEditForm({
       </div>
 
       <DrawerFooter className="flex-row justify-end gap-2 border-t">
-        <Button
-          type="button"
-          variant="ghost"
-          className="text-destructive hover:text-destructive mr-auto"
-          onClick={onRequestDelete}
-        >
-          <Trash2 className="size-4" />
-          Delete patient
-        </Button>
         <Button type="button" variant="ghost" onClick={onClose}>
           Cancel
         </Button>

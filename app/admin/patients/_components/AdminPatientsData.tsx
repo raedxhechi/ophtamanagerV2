@@ -34,8 +34,6 @@ export type AdminPatientRow = Patient & {
   insurance_company: { name: string } | null;
   doctor_office: { id: string; name: string | null } | null;
   suborders: AdminPatientSubOrder[];
-  /** Ids only: the drawer counts these when confirming a delete. */
-  draft_suborders: { id: string }[];
 };
 
 // The office is part of every row here (the admin list spans all of them), and
@@ -51,8 +49,7 @@ const PATIENTS_SELECT = `
     right_eye,
     invoice_type,
     order:orders ( id, created_at, application_date, delivery_date, medicine ( name ) )
-  ),
-  draft_suborders ( id )
+  )
 `;
 
 /**
