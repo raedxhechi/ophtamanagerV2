@@ -291,6 +291,57 @@
         "gkv": "GKV",
         "privat": "Privat"
       }
+    },
+    "SwapDrawer": {
+      "trigger": "Create a swap",
+      "title": "Create a swap",
+      "description": "Replace this suborder with one for another patient.",
+      "original": "Original suborder",
+      "replacement": "Replacement",
+      "fields": {
+        "patient": "Patient",
+        "dateOfBirth": "Date of birth",
+        "ikNumber": "IK number",
+        "medicine": "Medicine",
+        "applicationDate": "Application date",
+        "eyes": "Eyes",
+        "invoice": "Invoice"
+      },
+      "search": {
+        "placeholder": "Search patients",
+        "searching": "Searching...",
+        "noResults": "No patients found.",
+        "loadMore": "Load more"
+      },
+      "selected": {
+        "change": "Change"
+      },
+      "submit": "Create a swap",
+      "cancel": "Cancel",
+      "swaps": {
+        "title": "Swaps already created",
+        "none": "No swap has been created for this suborder yet.",
+        "loading": "Loading swaps..."
+      },
+      "toasts": {
+        "success": "Swap created.",
+        "error": "The swap could not be created."
+      },
+      "availability": {
+        "title": "Available amount",
+        "unit": "eyes",
+        "loading": "Working it out...",
+        "used": "{used} of {total} eyes already swapped",
+        "exhausted": "Every eye on this suborder has been swapped.",
+        "blocked": "No further swap is possible."
+      }
+    },
+    "SwapMarks": {
+      "isSwap": "Swap",
+      "isSwapOf": "Swap for {patient}",
+      "swapped": "{used}/{total} swapped",
+      "partlyTitle": "{available, plural, one {# eye still available} other {# eyes still available}}",
+      "fullyTitle": "Fully swapped"
     }
   }
 }

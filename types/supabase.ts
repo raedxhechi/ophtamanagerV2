@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   graphql_public: {
     Tables: {
@@ -561,6 +561,7 @@ export type Database = {
           patient_id: string
           right_eye: boolean
           search_text: string | null
+          swapped_from_id: string | null
           updated_at: string
         }
         Insert: {
@@ -573,6 +574,7 @@ export type Database = {
           patient_id: string
           right_eye?: boolean
           search_text?: string | null
+          swapped_from_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -585,6 +587,7 @@ export type Database = {
           patient_id?: string
           right_eye?: boolean
           search_text?: string | null
+          swapped_from_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -600,6 +603,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suborders_swapped_from_id_fkey"
+            columns: ["swapped_from_id"]
+            isOneToOne: false
+            referencedRelation: "suborders"
             referencedColumns: ["id"]
           },
         ]

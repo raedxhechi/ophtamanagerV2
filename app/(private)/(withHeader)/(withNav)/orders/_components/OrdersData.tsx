@@ -89,6 +89,10 @@ export async function OrdersData({
       // Decided on the server, where the role is already known — the private
       // area has no user store to read it from on the client.
       canEditStatus={canEditOrderStatus(role)}
+      // Scopes the swap drawer's patient search to the office being worked in,
+      // on top of what RLS already allows — an admin or a manager has no office
+      // of their own for it to fall back to.
+      doctorOfficeId={officeId}
     />
   );
 }

@@ -291,6 +291,57 @@
         "gkv": "GKV",
         "privat": "Privat"
       }
+    },
+    "SwapDrawer": {
+      "trigger": "Tausch anlegen",
+      "title": "Tausch anlegen",
+      "description": "Diese Unterbestellung durch eine andere Patientin oder einen anderen Patienten ersetzen.",
+      "original": "Ursprüngliche Unterbestellung",
+      "replacement": "Ersatz",
+      "fields": {
+        "patient": "Patient",
+        "dateOfBirth": "Geburtsdatum",
+        "ikNumber": "IK-Nummer",
+        "medicine": "Medikament",
+        "applicationDate": "OP-Datum",
+        "eyes": "Augen",
+        "invoice": "Rechnungsstellung"
+      },
+      "search": {
+        "placeholder": "Patient suchen",
+        "searching": "Sucht...",
+        "noResults": "Keine Patienten gefunden.",
+        "loadMore": "Mehr laden"
+      },
+      "selected": {
+        "change": "Ändern"
+      },
+      "submit": "Tausch anlegen",
+      "cancel": "Abbrechen",
+      "swaps": {
+        "title": "Bereits angelegte Tausche",
+        "none": "Für diese Unterbestellung wurde noch kein Tausch angelegt.",
+        "loading": "Lädt Tausche..."
+      },
+      "toasts": {
+        "success": "Tausch angelegt.",
+        "error": "Tausch konnte nicht angelegt werden."
+      },
+      "availability": {
+        "title": "Verfügbare Menge",
+        "unit": "Augen",
+        "loading": "Wird berechnet...",
+        "used": "{used} von {total} Augen bereits getauscht",
+        "exhausted": "Alle Augen dieser Unterbestellung sind getauscht.",
+        "blocked": "Kein weiterer Tausch möglich."
+      }
+    },
+    "SwapMarks": {
+      "isSwap": "Tausch",
+      "isSwapOf": "Tausch für {patient}",
+      "swapped": "{used}/{total} getauscht",
+      "partlyTitle": "{available, plural, one {Noch # Auge verfügbar} other {Noch # Augen verfügbar}}",
+      "fullyTitle": "Vollständig getauscht"
     }
   }
 }

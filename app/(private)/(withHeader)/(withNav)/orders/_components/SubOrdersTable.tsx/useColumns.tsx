@@ -6,7 +6,7 @@ import { ColumnDef } from '@tanstack/react-table'
 
 // import { OrderSubOrderTableItem } from './schema'
 // import { DataTableColumnHeader } from './table/data-table-column-header'
-import { Eye, FileText, Printer } from 'lucide-react'
+import { ArrowLeftRight, Eye, FileText, Printer } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { SubOrder } from '@/types'
@@ -14,15 +14,33 @@ import { SubOrder } from '@/types'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
+
+import { SwapMarks } from '@/components/swap-marks'
+import type { SwapMarking } from '@/lib/swaps'
 import { formatDateFromString } from '@/lib/utils'
 
-export const useColumns = (hideActions?: boolean) => {
+export const useColumns = (
+  hideActions?: boolean,
+  // Opens the swap drawer for this suborder. Left unset where the table has no
+  // swapping to offer, and the button is then not rendered.
+  onCreateSwap?: (subOrder: SubOrder) => void,
+  // Where each row stands in a swap, keyed by suborder id. Derived once by the
+  // table from the rows it already has, so no column fetches anything.
+  markings?: Map<string, SwapMarking>
+) => {
+  const t = useTranslations()
   const columns: ColumnDef<SubOrder>[] = [
     {
       accessorKey: 'Name',
       // header: ({ column }) => <DataTableColumnHeader column={column} title='Name' />,
+      // The marks sit under the name rather than beside it, so a marked row
+      // doesn't widen the column and shunt every other row's cells along.
       cell: ({ row }) => (
-        <div className=''>{`${row.original.patient.last_name} ${row.original.patient.first_name}`}</div>
+        <div className='flex flex-col gap-1'>
+          <span>{`${row.original.patient.last_name} ${row.original.patient.first_name}`}</span>
+          <SwapMarks marking={markings?.get(row.original.id)} />
+        </div>
       ),
       enableSorting: false,
       enableHiding: false,
@@ -114,6 +132,15 @@ export const useColumns = (hideActions?: boolean) => {
               <FileText />
             </Button>
           </Link>
+          {onCreateSwap ? (
+            <Button
+              variant='outline'
+              title={t('component.SwapDrawer.trigger')}
+              onClick={() => onCreateSwap(row.original)}
+            >
+              <ArrowLeftRight />
+            </Button>
+          ) : null}
         </div>
       ),
     }

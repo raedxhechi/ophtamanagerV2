@@ -18,7 +18,10 @@ import {
 } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
+import { SwapMarks } from "@/components/swap-marks";
 import { formatDateFromString } from "@/lib/utils";
+import { swapMarkings, type SwapMarking } from "@/lib/swaps";
+import { useSwapRelations } from "@/react-query/subOrders";
 
 
 import {
@@ -33,6 +36,8 @@ export interface SubOrderForPatient{
   id: string;
   left_eye: boolean;
   right_eye: boolean;
+  /** Set when this suborder replaces another one; see lib/swaps. */
+  swapped_from_id: string | null;
   first_name: string;
   last_name: string;
   date_of_birth: string | null;
@@ -51,15 +56,23 @@ export interface SubOrderForPatient{
 /** Column headers are keyed by column id under the `headers` message group. */
 type TFn = (key: string) => string;
 
-function getColumns(t: TFn): ColumnDef<SubOrderForPatient>[] {
+function getColumns(
+  t: TFn,
+  markings: Map<string, SwapMarking>
+): ColumnDef<SubOrderForPatient>[] {
   return [
     {
       accessorKey: 'name',
+      // The marks sit under the name rather than beside it, so a marked row
+      // doesn't widen the column and shunt every other row's cells along.
       cell: ({ row }) => (
-        <div className='font-medium'>
-          {[row.original.last_name, row.original.first_name]
-            .filter(Boolean)
-            .join(', ')}
+        <div className='flex flex-col gap-1'>
+          <span className='font-medium'>
+            {[row.original.last_name, row.original.first_name]
+              .filter(Boolean)
+              .join(', ')}
+          </span>
+          <SwapMarks marking={markings.get(row.original.id)} />
         </div>
       ),
     },
@@ -119,7 +132,36 @@ function getColumns(t: TFn): ColumnDef<SubOrderForPatient>[] {
 
 export function SubordersTable({ suborders }: { suborders: SubOrderForPatient[] }) {
   const t = useTranslations("component.PatientsTable");
-  const columns = React.useMemo(() => getColumns(t), [t]);
+
+  // This list spans orders, and a swap names a different patient, so neither a
+  // row's swaps nor the original it replaces are in it — both are fetched.
+  const subOrderIds = React.useMemo(
+    () => suborders.map((suborder) => suborder.id),
+    [suborders]
+  );
+  const originalIds = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          suborders
+            .map((suborder) => suborder.swapped_from_id)
+            .filter((id): id is string => !!id)
+        )
+      ),
+    [suborders]
+  );
+
+  const { data: relations } = useSwapRelations(subOrderIds, originalIds);
+
+  // Until the relations land this marks what the list alone can see, which is
+  // nothing: no row claims swaps it cannot account for, it just shows fewer
+  // marks for a moment.
+  const markings = React.useMemo(
+    () => swapMarkings([...suborders, ...(relations ?? [])]),
+    [suborders, relations]
+  );
+
+  const columns = React.useMemo(() => getColumns(t, markings), [t, markings]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   // A few less-central columns are hidden by default; toggle them back on

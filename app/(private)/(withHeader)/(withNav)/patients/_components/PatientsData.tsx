@@ -18,6 +18,7 @@ const PATIENTS_SELECT = `
     id,
     left_eye,
     right_eye,
+    swapped_from_id,
     order:orders ( created_at, application_date, delivery_date, medicine ( name ) )
   )
 `;
@@ -92,6 +93,7 @@ export async function PatientsData({
         id: suborder.id,
         left_eye: suborder.left_eye,
         right_eye: suborder.right_eye,
+        swapped_from_id: suborder.swapped_from_id ?? null,
         first_name: patient.first_name ?? "",
         last_name: patient.last_name ?? "",
         date_of_birth: patient.date_of_birth ?? null,

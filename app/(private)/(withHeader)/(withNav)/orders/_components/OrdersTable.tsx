@@ -127,6 +127,7 @@ export function OrdersTable({
   pageSize,
   search,
   canEditStatus,
+  doctorOfficeId,
 }: {
   data: OrderRow[];
   /** 1-based index of the currently loaded page. */
@@ -144,6 +145,12 @@ export function OrdersTable({
    * admin or a manager, who are the only roles RLS lets update an order.
    */
   canEditStatus: boolean;
+  /**
+   * The office these orders belong to — the one picked in the header for an
+   * admin or a manager. Passed down to scope the swap drawer's patient search
+   * the same way the order form's picker is scoped.
+   */
+  doctorOfficeId?: string;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -306,6 +313,7 @@ export function OrdersTable({
                             ...suborder,
                             order: row.original,
                           }))}
+                          doctorOfficeId={doctorOfficeId}
                         />
                       </div>
                     </TableCell>
